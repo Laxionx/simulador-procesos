@@ -37,7 +37,9 @@ Planta: Lixiviación de óxidos de cobre
 
 3 casos comparados con resultados calculados aparte: un reciclo con solución exacta, una lixiviación calculada a mano y una concentradora contra la fórmula de dos productos. El detalle está en [docs/casos-validacion.md](docs/casos-validacion.md).
 
-73 pruebas, cobertura del 99 % y ruff limpio:
+Además, 3 plantas reales publicadas: la producción de Constancia (Hudbay), el ácido de lixiviación de Marimaca y los cátodos del plan minero de Puquios. Las tolerancias se fijaron antes de correr. Detalle y hallazgos en [docs/VALIDACION_PLANTAS_REALES.md](docs/VALIDACION_PLANTAS_REALES.md).
+
+113 pruebas (más 2 fallos esperados por redondeo de la fuente), cobertura del 99 % y ruff limpio:
 
 ```bash
 python -m pytest --cov=procesos
