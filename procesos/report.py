@@ -5,6 +5,7 @@ from __future__ import annotations
 import csv
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 from openpyxl import Workbook
 
@@ -127,3 +128,17 @@ def worst_closure(flowsheet: Flowsheet, solution: Solution) -> float:
     mass = max((r.relative_error for r in rows if r.inflow > 0), default=0.0)
     energy = max((r.relative_error for r in energy_balance(flowsheet, solution)), default=0.0)
     return max(mass, energy)
+
+
+IONIC_STRENGTH_LIMIT = 0.5  # mol/kg: hasta aquí vale el modelo de actividad de minteq.v4
+
+
+def equilibrium_report(flowsheet: Flowsheet, solution: Solution) -> list[tuple[str, Any]]:
+    """(nombre, EquilibriumResult) de cada reactor de equilibrio: pH, fuerza iónica, minerales."""
+    from .equilibrium import EquilibriumReactor
+
+    return [
+        (unit.name, unit.solve([solution.streams[n] for n in unit.inputs], flowsheet.catalog))
+        for unit in flowsheet.units
+        if isinstance(unit, EquilibriumReactor)
+    ]

@@ -10,6 +10,7 @@ from typing import Any
 import yaml
 
 from .control import Controller, Goal, Manipulated
+from .equilibrium import EquilibriumReactor, database_path
 from .flowsheet import Flowsheet
 from .reactions import Reaction, parse_equation
 from .species import Catalog, make_species
@@ -95,6 +96,19 @@ def _unit(data: Any, index: int) -> Unit:
                 tuple(reactions),
                 None if temperature is None else float(temperature),
             )
+        if kind == "equilibrio":
+            minerals = data.get("minerales") or {}
+            if not isinstance(minerals, Mapping):
+                raise PlantFileError(f"{where}.minerales: debe ser un mapa fase -> especie")
+            temperature = data.get("temperatura")
+            return EquilibriumReactor(
+                name,
+                inputs,
+                outputs,
+                {str(k): str(v) for k, v in minerals.items()},
+                None if temperature is None else float(temperature),
+                database_path(data.get("base")),
+            )
         if kind == "calentador":
             temperature, duty = data.get("temperatura"), data.get("calor_kw")
             return Heater(
@@ -104,10 +118,11 @@ def _unit(data: Any, index: int) -> Unit:
                 None if temperature is None else float(temperature),
                 None if duty is None else float(duty),
             )
-    except (TypeError, ValueError, AttributeError) as error:
+    except (TypeError, ValueError, AttributeError, FileNotFoundError) as error:
         raise PlantFileError(f"{where}: {error}") from error
     raise PlantFileError(
-        f"{where}: tipo desconocido {kind!r} (mezclador, divisor, separador, reactor, calentador)"
+        f"{where}: tipo desconocido {kind!r} "
+        "(mezclador, divisor, separador, reactor, calentador, equilibrio)"
     )
 
 

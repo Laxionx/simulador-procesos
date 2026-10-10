@@ -11,8 +11,10 @@ from .control import ControlError, solve_with_controllers
 from .flowsheet import ConvergenceError
 from .plant_io import PlantFileError, load_plant
 from .report import (
+    IONIC_STRENGTH_LIMIT,
     element_balance,
     energy_balance,
+    equilibrium_report,
     stream_table,
     worst_closure,
     write_csv,
@@ -47,6 +49,20 @@ def _solve(path: Path, output: Path | None) -> int:
             )
         for name in flowsheet.products:
             print(f"    {name} sale a {solution.streams[name].temperature:.2f} °C")
+    for name, eq in equilibrium_report(flowsheet, solution):
+        minerals = ", ".join(
+            f"{p} {eq.minerals_mol_h[p]:,.1f} mol/h (IS {eq.saturation[p]:+.3f})"
+            for p in eq.minerals_mol_h
+        )
+        print(
+            f"  Equilibrio «{name}»: pH {eq.ph:.3f} · fuerza iónica {eq.ionic_strength:.3f} mol/kg"
+        )
+        if minerals:
+            print(f"    Minerales: {minerals}")
+        if eq.ionic_strength > IONIC_STRENGTH_LIMIT:
+            print(
+                "    Aviso: fuerza iónica sobre 0,5 mol/kg, fuera del rango del modelo de actividad"
+            )
     closure = worst_closure(flowsheet, solution)
     print(f"  Peor error de cierre: {closure:.2e}")
     if output is not None:

@@ -1,8 +1,8 @@
 # simulador-procesos
 
-Simulador de procesos metalúrgicos implementado **desde la literatura**: balance de masa y de calor de plantas con reacciones químicas, reciclos y lazos de control. Es independiente de cualquier software comercial.
+Simulador de procesos metalúrgicos implementado **desde la literatura**: balance de masa y de calor de plantas con reacciones químicas, equilibrio acuoso, reciclos y lazos de control. Es independiente de cualquier software comercial.
 
-**Fases 1 y 2 (esta versión):** balance de masa y de calor en estado estacionario.
+**Fases 1 a 3 (esta versión):** balance de masa y de calor en estado estacionario, y equilibrio químico acuoso con PHREEQC.
 
 ```bash
 pip install -e .
@@ -39,7 +39,7 @@ Planta: Lixiviación de óxidos de cobre
 
 Además, 3 plantas reales publicadas: la producción de Constancia (Hudbay), el ácido de lixiviación de Marimaca y los cátodos del plan minero de Puquios. Las tolerancias se fijaron antes de correr. Detalle y hallazgos en [docs/VALIDACION_PLANTAS_REALES.md](docs/VALIDACION_PLANTAS_REALES.md).
 
-126 pruebas (más 2 fallos esperados por redondeo de la fuente), cobertura del 98 % y ruff limpio:
+137 pruebas (más 6 fallos esperados: redondeos de la fuente y el límite del modelo de actividad), cobertura del 97 % y ruff limpio:
 
 ```bash
 python -m pytest --cov=procesos
@@ -58,13 +58,25 @@ Los datos de las especies se validaron contra fuentes independientes: JANAF, IAP
 python -m procesos resolver ejemplos/lixiviacion_con_calor.yaml
 ```
 
+## Equilibrio químico (fase 3)
+
+El equipo `equilibrio` decide por equilibrio cuánto se disuelve o precipita, por ejemplo el yeso en una solución de lixiviación, y da el pH. Usa PHREEQC del USGS (dominio público) mediante phreeqpy, y es opcional: `pip install -e ".[equilibrio]"`.
+- Validado contra la solubilidad del yeso en agua (+4,5 %) y en ácido sulfúrico hasta 0,4 mol/kg (±15 %).
+- Sobre una fuerza iónica de 0,5 mol/kg, el modelo de actividad se sale de rango, y está documentado.
+
+Ver [docs/equilibrio.md](docs/equilibrio.md).
+
+```bash
+python -m procesos resolver ejemplos/lixiviacion_equilibrio.yaml
+```
+
 ## Hoja de ruta
 
 | Fase | Contenido |
 |---|---|
 | 1 ✅ | Balance de masa con reacciones, reciclos y lazos de control |
 | 2 ✅ | Balance de calor: entalpías y temperaturas con datos públicos (NIST-JANAF, USGS, CODATA) |
-| 3 | Equilibrio químico, también acuoso, integrando motores libres |
+| 3 ✅ | Equilibrio químico acuoso con PHREEQC (minteq.v4); válido hasta una fuerza iónica de ~0,5 mol/kg |
 | 4 | Diagrama interactivo, costos y reportes |
 
 ## Límites de esta versión

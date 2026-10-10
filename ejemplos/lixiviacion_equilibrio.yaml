@@ -1,0 +1,37 @@
+# Fase 3: la lixiviación del caso 2 seguida de un reactor de equilibrio (PHREEQC).
+# El carbonato de la ganga deja calcio disuelto muy por encima de la solubilidad del yeso; el
+# equilibrio decide cuánto precipita como CaSO4·2H2O y cuál es el pH de la solución.
+# Fuerza iónica ~0,5 mol/kg: en el límite del modelo de actividad (ver docs/equilibrio.md).
+nombre: Lixiviación con precipitación de yeso por equilibrio
+especies:
+  - {nombre: CuO, fase: s}
+  - {nombre: CaCO3, fase: s}
+  - {nombre: SiO2, fase: s}
+  - {nombre: H2SO4, fase: aq}
+  - {nombre: H2O, fase: l}
+  - {nombre: CuSO4, fase: aq}
+  - {nombre: CaSO4, fase: aq}
+  - {nombre: CO2, fase: g}
+  - {nombre: "CaSO4·2H2O", fase: s}
+alimentaciones:
+  Mineral: {flujos: {CuO: 1500.0, CaCO3: 800.0, SiO2: 97700.0}, temperatura: 25}
+  Acido: {flujos: {H2SO4: 3200.58}, temperatura: 25}
+  Agua: {flujos: {H2O: 150000.0}, temperatura: 25}
+equipos:
+  - tipo: mezclador
+    nombre: Acondicionamiento
+    entradas: [Mineral, Acido, Agua]
+    salidas: [Pulpa]
+  - tipo: reactor
+    nombre: Lixiviación
+    entradas: [Pulpa]
+    salidas: [Descarga]
+    reacciones:
+      - {ecuacion: "CuO + H2SO4 -> CuSO4 + H2O", clave: CuO, conversion: 0.90}
+      - {ecuacion: "CaCO3 + H2SO4 -> CaSO4 + H2O + CO2", clave: CaCO3, conversion: 1.0}
+  - tipo: equilibrio
+    nombre: Precipitación
+    entradas: [Descarga]
+    salidas: [PLS]
+    minerales: {Gypsum: "CaSO4·2H2O"}
+    temperatura: 25

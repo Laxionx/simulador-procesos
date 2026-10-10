@@ -313,6 +313,10 @@ class Heater:
 
 def unit_species(unit: Unit) -> set[str]:
     """Especies que un equipo menciona en sus parámetros (para validar contra el catálogo)."""
+    from .equilibrium import EquilibriumReactor
+
+    if isinstance(unit, EquilibriumReactor):
+        return set(unit.minerals.values())
     if isinstance(unit, Separator):
         return set(unit.recoveries)
     if isinstance(unit, Reactor):
