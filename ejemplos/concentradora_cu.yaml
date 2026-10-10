@@ -1,0 +1,25 @@
+# Caso de verificación 3: flotación rougher-cleaner con el relave cleaner recirculado.
+# La recuperación global de cada especie es Rr·Rc / (1 - Rr·(1 - Rc)), y las leyes de cobre de
+# alimentación, concentrado y relave deben cumplir la fórmula de dos productos (Wills).
+nombre: Concentradora de cobre, rougher-cleaner
+especies:
+  - {nombre: CuFeS2, fase: s}
+  - {nombre: SiO2, fase: s}
+  - {nombre: H2O, fase: l}
+alimentaciones:
+  Mineral: {flujos: {CuFeS2: 2900.0, SiO2: 97100.0, H2O: 150000.0}}
+equipos:
+  - tipo: mezclador
+    nombre: Cajón rougher
+    entradas: [Mineral, Relave cleaner]
+    salidas: [Alimentacion rougher]
+  - tipo: separador
+    nombre: Rougher
+    entradas: [Alimentacion rougher]
+    salidas: [Concentrado rougher, Relave final]
+    recuperaciones: {CuFeS2: 0.92, SiO2: 0.08, H2O: 0.15}
+  - tipo: separador
+    nombre: Cleaner
+    entradas: [Concentrado rougher]
+    salidas: [Concentrado final, Relave cleaner]
+    recuperaciones: {CuFeS2: 0.95, SiO2: 0.15, H2O: 0.40}

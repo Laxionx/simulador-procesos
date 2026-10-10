@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "procesos"
+version = "0.1.0"
+description = "Simulador de procesos metalúrgicos (balance de masa con reacciones, reciclos y lazos de control) implementado desde la literatura"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "Anthony Vera Baldeón" }]
+dependencies = ["numpy", "scipy", "pyyaml", "openpyxl"]
+
+[project.scripts]
+procesos = "procesos.cli:main"
+
+[tool.setuptools]
+packages = ["procesos"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+
+[tool.coverage.run]
+source = ["procesos"]

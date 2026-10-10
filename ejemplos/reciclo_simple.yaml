@@ -1,0 +1,21 @@
+# Caso de verificación 1: reciclo con solución exacta conocida.
+# Cada especie cumple M = F / (1 - r (1 - s)), con s = recuperación al producto y r = fracción
+# recirculada del fondo (ver docs/casos-validacion.md).
+nombre: Reciclo con solución exacta
+especies:
+  - {nombre: SiO2, fase: s}
+  - {nombre: H2O, fase: l}
+alimentaciones:
+  Alimentacion: {flujos: {SiO2: 100.0, H2O: 50.0}}
+equipos:
+  - {tipo: mezclador, nombre: Cajón, entradas: [Alimentacion, Reciclo], salidas: [Mezcla]}
+  - tipo: separador
+    nombre: Separador
+    entradas: [Mezcla]
+    salidas: [Producto, Fondo]
+    recuperaciones: {SiO2: 0.6, H2O: 0.2}
+  - tipo: divisor
+    nombre: Divisor
+    entradas: [Fondo]
+    salidas: [Reciclo, Purga]
+    fracciones: [0.7, 0.3]

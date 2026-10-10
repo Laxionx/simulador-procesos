@@ -1,0 +1,33 @@
+# Caso de verificación 2: lixiviación de óxidos de cobre con consumo de ácido por la ganga.
+# El controlador ajusta el ácido sulfúrico hasta dejar 5 g de H2SO4 libre por kg de agua en la
+# descarga. El resultado se compara con un cálculo a mano (docs/casos-validacion.md).
+nombre: Lixiviación de óxidos de cobre
+especies:
+  - {nombre: CuO, fase: s}
+  - {nombre: CaCO3, fase: s}
+  - {nombre: SiO2, fase: s}
+  - {nombre: H2SO4, fase: aq}
+  - {nombre: H2O, fase: l}
+  - {nombre: CuSO4, fase: aq}
+  - {nombre: CaSO4, fase: s}
+  - {nombre: CO2, fase: g}
+alimentaciones:
+  Mineral: {flujos: {CuO: 1500.0, CaCO3: 800.0, SiO2: 97700.0}, temperatura: 20}
+  Acido: {flujos: {H2SO4: 3000.0}}
+  Agua: {flujos: {H2O: 150000.0}}
+equipos:
+  - tipo: mezclador
+    nombre: Acondicionamiento
+    entradas: [Mineral, Acido, Agua]
+    salidas: [Pulpa]
+  - tipo: reactor
+    nombre: Lixiviación
+    entradas: [Pulpa]
+    salidas: [Descarga]
+    reacciones:
+      - {ecuacion: "CuO + H2SO4 -> CuSO4 + H2O", clave: CuO, conversion: 0.90}
+      - {ecuacion: "CaCO3 + H2SO4 -> CaSO4 + H2O + CO2", clave: CaCO3, conversion: 1.0}
+controladores:
+  - nombre: Acidez libre
+    ajustar: {alimentacion: Acido, especie: H2SO4, minimo: 0, maximo: 20000}
+    meta: {corriente: Descarga, propiedad: g_por_kg_agua, especie: H2SO4, valor: 5}
