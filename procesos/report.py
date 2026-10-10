@@ -10,6 +10,8 @@ from openpyxl import Workbook
 
 from .flowsheet import Flowsheet, Solution
 from .stream import element_flows, mix
+from .thermo import stream_enthalpy
+from .units import Heater, Reactor
 
 
 @dataclass(frozen=True)
@@ -74,7 +76,54 @@ def unit_balance(flowsheet: Flowsheet, solution: Solution) -> list[BalanceRow]:
     ]
 
 
+@dataclass(frozen=True)
+class EnergyRow:
+    """Balance de energía de un equipo (kW): entra + calor agregado = sale."""
+
+    name: str
+    inflow: float
+    duty: float
+    outflow: float
+
+    @property
+    def relative_error(self) -> float:
+        scale = max(abs(self.inflow), abs(self.outflow), abs(self.duty), 1e-9)
+        return abs(self.inflow + self.duty - self.outflow) / scale
+
+
+def energy_balance(flowsheet: Flowsheet, solution: Solution) -> list[EnergyRow]:
+    """Entalpía que entra y sale de cada equipo y el calor que recibe (fase 2)."""
+    catalog = flowsheet.catalog
+    if catalog.thermo is None:
+        return []
+
+    def h(name: str) -> float:
+        s = solution.streams[name]
+        return stream_enthalpy(s.flows, s.temperature, catalog)
+
+    rows = []
+    for unit in flowsheet.units:
+        inputs = [solution.streams[n] for n in unit.inputs]
+        duty = (
+            unit.heat_duty(inputs, catalog)
+            if isinstance(unit, Heater)
+            or (isinstance(unit, Reactor) and unit.temperature is not None)
+            else 0.0
+        )
+        rows.append(
+            EnergyRow(
+                unit.name,
+                sum(h(n) for n in unit.inputs),
+                duty,
+                sum(h(n) for n in unit.outputs),
+            )
+        )
+    return rows
+
+
 def worst_closure(flowsheet: Flowsheet, solution: Solution) -> float:
-    """Peor error relativo de cierre entre los balances por elemento y por equipo."""
+    """Peor error relativo de cierre: elementos, masa por equipo y, si hay, energía."""
     rows = element_balance(flowsheet, solution) + unit_balance(flowsheet, solution)
-    return max((r.relative_error for r in rows if r.inflow > 0), default=0.0)
+    mass = max((r.relative_error for r in rows if r.inflow > 0), default=0.0)
+    energy = max((r.relative_error for r in energy_balance(flowsheet, solution)), default=0.0)
+    return max(mass, energy)

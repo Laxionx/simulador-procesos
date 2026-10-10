@@ -1,8 +1,8 @@
 # simulador-procesos
 
-Simulador de procesos metalúrgicos implementado **desde la literatura**: balance de masa de plantas con reacciones químicas, reciclos y lazos de control. Es independiente de cualquier software comercial.
+Simulador de procesos metalúrgicos implementado **desde la literatura**: balance de masa y de calor de plantas con reacciones químicas, reciclos y lazos de control. Es independiente de cualquier software comercial.
 
-**Fase 1 (esta versión):** balance de masa en estado estacionario.
+**Fases 1 y 2 (esta versión):** balance de masa y de calor en estado estacionario.
 
 ```bash
 pip install -e .
@@ -39,10 +39,23 @@ Planta: Lixiviación de óxidos de cobre
 
 Además, 3 plantas reales publicadas: la producción de Constancia (Hudbay), el ácido de lixiviación de Marimaca y los cátodos del plan minero de Puquios. Las tolerancias se fijaron antes de correr. Detalle y hallazgos en [docs/VALIDACION_PLANTAS_REALES.md](docs/VALIDACION_PLANTAS_REALES.md).
 
-113 pruebas (más 2 fallos esperados por redondeo de la fuente), cobertura del 99 % y ruff limpio:
+126 pruebas (más 2 fallos esperados por redondeo de la fuente), cobertura del 98 % y ruff limpio:
 
 ```bash
 python -m pytest --cov=procesos
+```
+
+## Balance de calor (fase 2)
+
+Con `balance_de_calor: true` en el YAML, cada equipo cierra también la energía. Los datos son públicos: NIST-JANAF, USGS y CODATA.
+- Los mezcladores y los reactores adiabáticos calculan su temperatura de salida.
+- Los reactores con temperatura fija y los calentadores dan el calor necesario.
+- Los lazos de control pueden fijar una temperatura de salida.
+
+Los datos de las especies se validaron contra fuentes independientes: JANAF, IAPWS y USGS, con desvíos de 0,6 % o menos. El detalle y los límites están en [docs/balance-de-calor.md](docs/balance-de-calor.md).
+
+```bash
+python -m procesos resolver ejemplos/lixiviacion_con_calor.yaml
 ```
 
 ## Hoja de ruta
@@ -50,13 +63,15 @@ python -m pytest --cov=procesos
 | Fase | Contenido |
 |---|---|
 | 1 ✅ | Balance de masa con reacciones, reciclos y lazos de control |
-| 2 | Balance de calor: entalpías y temperaturas con datos públicos (NASA, NIST-JANAF) |
+| 2 ✅ | Balance de calor: entalpías y temperaturas con datos públicos (NIST-JANAF, USGS, CODATA) |
 | 3 | Equilibrio químico, también acuoso, integrando motores libres |
 | 4 | Diagrama interactivo, costos y reportes |
 
 ## Límites de esta versión
 
-- La temperatura y la presión se transportan pero no se balancean: el mezclador promedia la temperatura por masa hasta que exista la fase 2.
+- Sin `balance_de_calor`, la temperatura se transporta sin balancear: el mezclador la promedia por masa.
+- El balance de calor no modela cambios de fase, ni el Cp de los solutos acuosos, ni el calor de dilución del ácido concentrado (ver [docs/balance-de-calor.md](docs/balance-de-calor.md)).
+- La presión se transporta pero no se balancea.
 - Los separadores usan recuperaciones fijas. Los modelos físicos de flotación, clasificación y molienda viven en el proyecto hermano `simulador-conminucion`.
 
 ## Licencia

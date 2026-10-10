@@ -20,7 +20,7 @@ from scipy.optimize import brentq, root
 from .flowsheet import Flowsheet, Solution
 from .stream import Stream
 
-PROPERTIES = ("flujo", "total", "fraccion_masica", "g_por_kg_agua")
+PROPERTIES = ("flujo", "total", "fraccion_masica", "g_por_kg_agua", "temperatura")
 WATER = "H2O"
 
 
@@ -66,7 +66,7 @@ class Goal:
     def __post_init__(self) -> None:
         if self.prop not in PROPERTIES:
             raise ValueError(f"Propiedad desconocida {self.prop!r}; use una de {PROPERTIES}")
-        if self.prop != "total" and not self.species:
+        if self.prop not in ("total", "temperatura") and not self.species:
             raise ValueError(f"La propiedad {self.prop!r} necesita una especie")
         if not math.isfinite(self.value):
             raise ValueError(f"Meta no finita: {self.value}")
@@ -74,6 +74,8 @@ class Goal:
     def measure(self, stream: Stream) -> float:
         if self.prop == "total":
             return stream.total
+        if self.prop == "temperatura":
+            return stream.temperature
         assert self.species is not None
         if self.prop == "flujo":
             return stream.flow(self.species)

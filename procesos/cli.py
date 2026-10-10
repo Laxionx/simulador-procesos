@@ -10,7 +10,14 @@ from pathlib import Path
 from .control import ControlError, solve_with_controllers
 from .flowsheet import ConvergenceError
 from .plant_io import PlantFileError, load_plant
-from .report import element_balance, stream_table, worst_closure, write_csv, write_xlsx
+from .report import (
+    element_balance,
+    energy_balance,
+    stream_table,
+    worst_closure,
+    write_csv,
+    write_xlsx,
+)
 
 
 def _solve(path: Path, output: Path | None) -> int:
@@ -30,6 +37,16 @@ def _solve(path: Path, output: Path | None) -> int:
     print("  Balance por elemento (kg/h):")
     for row in element_balance(flowsheet, solution):
         print(f"    {row.name:>3}: entra {row.inflow:14,.4f} · sale {row.outflow:14,.4f}")
+    energy = energy_balance(flowsheet, solution)
+    if energy:
+        print("  Balance de energía (kW):")
+        for row in energy:
+            print(
+                f"    {row.name:>20}: entra {row.inflow:14,.1f} · calor {row.duty:12,.1f}"
+                f" · sale {row.outflow:14,.1f}"
+            )
+        for name in flowsheet.products:
+            print(f"    {name} sale a {solution.streams[name].temperature:.2f} °C")
     closure = worst_closure(flowsheet, solution)
     print(f"  Peor error de cierre: {closure:.2e}")
     if output is not None:

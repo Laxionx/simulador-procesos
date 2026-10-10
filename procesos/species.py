@@ -5,8 +5,12 @@ from __future__ import annotations
 from collections.abc import Iterator, Mapping, Sequence
 from dataclasses import dataclass
 from types import MappingProxyType
+from typing import TYPE_CHECKING
 
 from .elements import molar_mass, parse_formula, split_charge, strip_phase
+
+if TYPE_CHECKING:
+    from .thermo import ThermoDatabase
 
 PHASES = ("s", "l", "aq", "g")
 
@@ -49,9 +53,12 @@ def make_species(name: str, formula: str | None = None, phase: str | None = None
 
 
 class Catalog:
-    """Catálogo ordenado de especies; el orden fija la codificación de las corrientes."""
+    """Catálogo ordenado de especies; el orden fija la codificación de las corrientes.
 
-    def __init__(self, species: Sequence[Species]) -> None:
+    Con `thermo` (fase 2) los equipos hacen balance de calor; toda especie debe tener datos.
+    """
+
+    def __init__(self, species: Sequence[Species], thermo: ThermoDatabase | None = None) -> None:
         names = [s.name for s in species]
         duplicated = sorted({n for n in names if names.count(n) > 1})
         if duplicated:
@@ -60,6 +67,11 @@ class Catalog:
             raise ValueError("El catálogo necesita al menos una especie")
         self._species = {s.name: s for s in species}
         self.names: tuple[str, ...] = tuple(names)
+        if thermo is not None:
+            missing = thermo.missing(tuple(species))
+            if missing:
+                raise ValueError(f"Sin datos termodinámicos para: {missing}")
+        self.thermo = thermo
 
     def __getitem__(self, name: str) -> Species:
         try:

@@ -1,7 +1,8 @@
-"""Equipos de la planta: mezclador, divisor, separador por especie y reactor.
+"""Equipos de la planta: mezclador, divisor, separador por especie, reactor y calentador.
 
 Cada equipo es inmutable; ``with_parameter`` devuelve una copia con un parámetro cambiado, que
-es lo que usan los lazos de control para manipular la planta.
+es lo que usan los lazos de control para manipular la planta. Si el catálogo trae datos
+termodinámicos (fase 2), la temperatura de cada salida sale del balance de entalpía.
 """
 
 from __future__ import annotations
@@ -15,6 +16,7 @@ from typing import Protocol
 from .reactions import Reaction
 from .species import Catalog
 from .stream import Stream, mix, moles
+from .thermo import stream_enthalpy, temperature_for
 
 
 class Unit(Protocol):
@@ -32,6 +34,29 @@ def _check_fraction(value: float, label: str) -> float:
     if not math.isfinite(value) or not 0.0 <= value <= 1.0:
         raise ValueError(f"{label} debe estar entre 0 y 1: {value}")
     return value
+
+
+def _check_temperature(value: float | None, label: str) -> float | None:
+    if value is None:
+        return None
+    value = float(value)
+    if not math.isfinite(value) or value <= -273.15:
+        raise ValueError(f"{label}: temperatura imposible ({value} °C)")
+    return value
+
+
+def inlet_enthalpy(inputs: Sequence[Stream], catalog: Catalog) -> float:
+    """Entalpía total que entra (kW)."""
+    return sum(stream_enthalpy(s.flows, s.temperature, catalog) for s in inputs)
+
+
+def _mixed(inputs: Sequence[Stream], catalog: Catalog) -> Stream:
+    """Mezcla; con balance de calor, la temperatura es la que conserva la entalpía."""
+    feed = mix(inputs)
+    if catalog.thermo is None or len(inputs) < 2:
+        return feed
+    t = temperature_for(feed.flows, inlet_enthalpy(inputs, catalog), catalog, feed.temperature)
+    return Stream(feed.flows, t, feed.pressure)
 
 
 def _check_ports(
@@ -57,7 +82,7 @@ class Mixer:
         _check_ports(self.name, self.inputs, self.outputs, 1)
 
     def compute(self, inputs: Sequence[Stream], catalog: Catalog) -> tuple[Stream, ...]:
-        return (mix(inputs),)
+        return (_mixed(inputs, catalog),)
 
     def with_parameter(self, key: str, value: float) -> Mixer:
         raise KeyError(f"{self.name}: el mezclador no tiene parámetros ajustables ({key!r})")
@@ -82,7 +107,7 @@ class Splitter:
         object.__setattr__(self, "fractions", fractions)
 
     def compute(self, inputs: Sequence[Stream], catalog: Catalog) -> tuple[Stream, ...]:
-        feed = mix(inputs)
+        feed = _mixed(inputs, catalog)
         return tuple(
             Stream({n: v * f for n, v in feed.flows.items()}, feed.temperature, feed.pressure)
             for f in self.fractions
@@ -132,7 +157,7 @@ class Separator:
         return self.recoveries.get(species, self.default)
 
     def compute(self, inputs: Sequence[Stream], catalog: Catalog) -> tuple[Stream, ...]:
-        feed = mix(inputs)
+        feed = _mixed(inputs, catalog)
         first = {n: v * self.recovery(n) for n, v in feed.flows.items()}
         second = {n: v - first[n] for n, v in feed.flows.items()}
         return (
@@ -166,17 +191,24 @@ class ReactionExtent:
 
 @dataclass(frozen=True)
 class Reactor:
-    """Aplica las reacciones en orden sobre la mezcla de sus entradas."""
+    """Aplica las reacciones en orden sobre la mezcla de sus entradas.
+
+    Con balance de calor: si `temperature` (°C) está fijada, el reactor es isotérmico y
+    `heat_duty` da el calor que hay que agregar (kW; negativo = hay que retirar); si no, es
+    adiabático y la temperatura de salida sale del balance.
+    """
 
     name: str
     inputs: tuple[str, ...]
     outputs: tuple[str, ...]
     reactions: tuple[Reaction, ...]
+    temperature: float | None = None
 
     def __post_init__(self) -> None:
         _check_ports(self.name, self.inputs, self.outputs, 1)
         if not self.reactions:
             raise ValueError(f"{self.name}: el reactor necesita al menos una reacción")
+        object.__setattr__(self, "temperature", _check_temperature(self.temperature, self.name))
 
     def extents(self, inputs: Sequence[Stream], catalog: Catalog) -> list[ReactionExtent]:
         amounts = moles(mix(inputs), catalog)
@@ -203,10 +235,24 @@ class Reactor:
             for species, coefficient in item.reaction.stoichiometry.items():
                 amounts[species] = max(amounts.get(species, 0.0) + coefficient * item.extent, 0.0)
         flows = {n: kmol * catalog[n].molar_mass for n, kmol in amounts.items()}
-        return (Stream(flows, feed.temperature, feed.pressure),)
+        if self.temperature is not None:
+            t = self.temperature
+        elif catalog.thermo is not None:
+            t = temperature_for(flows, inlet_enthalpy(inputs, catalog), catalog, feed.temperature)
+        else:
+            t = feed.temperature
+        return (Stream(flows, t, feed.pressure),)
+
+    def heat_duty(self, inputs: Sequence[Stream], catalog: Catalog) -> float:
+        """Calor agregado (kW): entalpía que sale menos la que entra (0 si es adiabático)."""
+        (out,) = self.compute(inputs, catalog)
+        h_out = stream_enthalpy(out.flows, out.temperature, catalog)
+        return h_out - inlet_enthalpy(inputs, catalog)
 
     def with_parameter(self, key: str, value: float) -> Reactor:
-        """``'conversion:<n>'``, con n desde 1 en el orden de las reacciones."""
+        """``'conversion:<n>'`` (n desde 1, en orden) o ``'temperatura'``."""
+        if key == "temperatura":
+            return replace(self, temperature=value)
         kind, _, index_text = key.partition(":")
         if kind != "conversion" or not index_text.isdigit():
             raise KeyError(f"{self.name}: parámetro desconocido {key!r}; use 'conversion:<n>'")
@@ -216,6 +262,53 @@ class Reactor:
         reactions = list(self.reactions)
         reactions[index] = replace(reactions[index], conversion=value)
         return replace(self, reactions=tuple(reactions))
+
+
+@dataclass(frozen=True)
+class Heater:
+    """Calentador o enfriador: fija la temperatura de salida (°C) o agrega un calor (kW;
+    negativo = enfría). Con temperatura fija, `heat_duty` da el calor necesario."""
+
+    name: str
+    inputs: tuple[str, ...]
+    outputs: tuple[str, ...]
+    temperature: float | None = None
+    duty_kw: float | None = None
+
+    def __post_init__(self) -> None:
+        _check_ports(self.name, self.inputs, self.outputs, 1)
+        if (self.temperature is None) == (self.duty_kw is None):
+            raise ValueError(f"{self.name}: indique temperatura o calor, no ambos ni ninguno")
+        object.__setattr__(self, "temperature", _check_temperature(self.temperature, self.name))
+        if self.duty_kw is not None and not math.isfinite(float(self.duty_kw)):
+            raise ValueError(f"{self.name}: calor no finito")
+
+    def compute(self, inputs: Sequence[Stream], catalog: Catalog) -> tuple[Stream, ...]:
+        feed = _mixed(inputs, catalog)
+        if self.temperature is not None:
+            return (Stream(feed.flows, self.temperature, feed.pressure),)
+        if catalog.thermo is None:
+            raise ValueError(f"{self.name}: dar un calor exige activar el balance de calor")
+        target = inlet_enthalpy(inputs, catalog) + float(self.duty_kw or 0.0)
+        t = temperature_for(feed.flows, target, catalog, feed.temperature)
+        return (Stream(feed.flows, t, feed.pressure),)
+
+    def heat_duty(self, inputs: Sequence[Stream], catalog: Catalog) -> float:
+        if self.duty_kw is not None:
+            return float(self.duty_kw)
+        (out,) = self.compute(inputs, catalog)
+        h_out = stream_enthalpy(out.flows, out.temperature, catalog)
+        return h_out - inlet_enthalpy(inputs, catalog)
+
+    def with_parameter(self, key: str, value: float) -> Heater:
+        """``'temperatura'`` o ``'calor_kw'``."""
+        if key == "temperatura":
+            return replace(self, temperature=value, duty_kw=None)
+        if key == "calor_kw":
+            return replace(self, temperature=None, duty_kw=value)
+        raise KeyError(
+            f"{self.name}: parámetro desconocido {key!r}; use 'temperatura' o 'calor_kw'"
+        )
 
 
 def unit_species(unit: Unit) -> set[str]:

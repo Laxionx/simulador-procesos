@@ -9,15 +9,19 @@ from .plant_io import Plant, PlantFileError, load_plant
 from .reactions import Reaction, check_balance, parse_equation
 from .species import Catalog, Species, make_species
 from .stream import Stream, element_flows, mix, moles
-from .units import Mixer, Reactor, Separator, Splitter
+from .thermo import ThermoDatabase, ThermoRecord, stream_enthalpy, temperature_for
+from .thermo_data import DEFAULT_THERMO
+from .units import Heater, Mixer, Reactor, Separator, Splitter
 
 __all__ = [
     "Catalog",
     "ControlError",
+    "DEFAULT_THERMO",
     "Controller",
     "ConvergenceError",
     "Flowsheet",
     "Goal",
+    "Heater",
     "Manipulated",
     "Mixer",
     "Plant",
@@ -29,6 +33,8 @@ __all__ = [
     "Species",
     "Splitter",
     "Stream",
+    "ThermoDatabase",
+    "ThermoRecord",
     "check_balance",
     "element_flows",
     "load_plant",
@@ -37,4 +43,6 @@ __all__ = [
     "moles",
     "parse_equation",
     "solve_with_controllers",
+    "stream_enthalpy",
+    "temperature_for",
 ]

@@ -14,7 +14,8 @@ from .flowsheet import Flowsheet
 from .reactions import Reaction, parse_equation
 from .species import Catalog, make_species
 from .stream import STANDARD_PRESSURE, STANDARD_TEMPERATURE, Stream
-from .units import Mixer, Reactor, Separator, Splitter, Unit
+from .thermo_data import DEFAULT_THERMO
+from .units import Heater, Mixer, Reactor, Separator, Splitter, Unit
 
 
 @dataclass(frozen=True)
@@ -86,11 +87,27 @@ def _unit(data: Any, index: int) -> Unit:
                         equation,
                     )
                 )
-            return Reactor(name, inputs, outputs, tuple(reactions))
+            temperature = data.get("temperatura")
+            return Reactor(
+                name,
+                inputs,
+                outputs,
+                tuple(reactions),
+                None if temperature is None else float(temperature),
+            )
+        if kind == "calentador":
+            temperature, duty = data.get("temperatura"), data.get("calor_kw")
+            return Heater(
+                name,
+                inputs,
+                outputs,
+                None if temperature is None else float(temperature),
+                None if duty is None else float(duty),
+            )
     except (TypeError, ValueError, AttributeError) as error:
         raise PlantFileError(f"{where}: {error}") from error
     raise PlantFileError(
-        f"{where}: tipo desconocido {kind!r} (mezclador, divisor, separador, reactor)"
+        f"{where}: tipo desconocido {kind!r} (mezclador, divisor, separador, reactor, calentador)"
     )
 
 
@@ -151,7 +168,8 @@ def load_plant(source: str | Path) -> Plant:
             else make_species(str(s))
             for s in _require(data, "especies", "planta")
         ]
-        catalog = Catalog(species)
+        thermo = DEFAULT_THERMO if data.get("balance_de_calor", False) else None
+        catalog = Catalog(species, thermo)
     except ValueError as error:
         raise PlantFileError(f"especies: {error}") from error
     feeds = {
