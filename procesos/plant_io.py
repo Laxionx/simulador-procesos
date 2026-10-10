@@ -16,7 +16,7 @@ from .reactions import Reaction, parse_equation
 from .species import Catalog, make_species
 from .stream import STANDARD_PRESSURE, STANDARD_TEMPERATURE, Stream
 from .thermo_data import DEFAULT_THERMO
-from .units import Heater, Mixer, Reactor, Separator, Splitter, Unit
+from .units import Evaporator, Heater, Mixer, Reactor, Separator, Splitter, Unit
 
 
 @dataclass(frozen=True)
@@ -109,6 +109,14 @@ def _unit(data: Any, index: int) -> Unit:
                 None if temperature is None else float(temperature),
                 database_path(data.get("base")),
             )
+        if kind == "evaporador":
+            return Evaporator(
+                name,
+                inputs,
+                outputs,
+                float(data.get("calor_kw", 0.0)),
+                float(data.get("presion_kpa", 101.325)),
+            )
         if kind == "calentador":
             temperature, duty = data.get("temperatura"), data.get("calor_kw")
             return Heater(
@@ -122,7 +130,7 @@ def _unit(data: Any, index: int) -> Unit:
         raise PlantFileError(f"{where}: {error}") from error
     raise PlantFileError(
         f"{where}: tipo desconocido {kind!r} "
-        "(mezclador, divisor, separador, reactor, calentador, equilibrio)"
+        "(mezclador, divisor, separador, reactor, calentador, equilibrio, evaporador)"
     )
 
 

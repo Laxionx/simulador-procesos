@@ -7,11 +7,22 @@
   verificados reproduciendo la columna de Cp tabulada de cada mineral.
 - CODATA: Cox, Wagman y Medvedev (1989), CODATA Key Values for Thermodynamics. Un soluto
   acuoso se arma con sus iones a dilución infinita; su Cp se toma como 0 (ver README).
+- JANAF: ajuste propio Cp = A1 + A2 T + A3/T² a las tablas NIST-JANAF H-075 (H2SO4 líquido) y
+  H-064 (vapor de agua); se comprueba contra la columna H - H298 de la misma tabla.
+- ΦL del H2SO4 acuoso: Wu y Young (1980), J. Res. NBS 85, 11, Tabla 5 (hasta m = 9 mol/kg);
+  por encima, tablas NBS de Wagman et al. (1982), «H2SO4 in n H2O», con ΔfH(ai) = -909,27.
 """
 
 from __future__ import annotations
 
-from .thermo import ConstantCp, MaierKelley, Shomate, ThermoDatabase, ThermoRecord
+from .thermo import (
+    ApparentEnthalpy,
+    ConstantCp,
+    MaierKelley,
+    Shomate,
+    ThermoDatabase,
+    ThermoRecord,
+)
 
 NIST = "NIST WebBook, Shomate (Chase 1998)"
 USGS = "USGS Bulletin 2131 (Robie y Hemingway 1995)"
@@ -98,4 +109,101 @@ _CODATA = {
 }
 _CODATA[("CO2", "aq")] = ThermoRecord(-413.26, (ConstantCp(0.0),), CODATA)
 
-DEFAULT_THERMO = ThermoDatabase({**_NIST, **_USGS, **_CODATA})
+JANAF_FIT = "Ajuste propio a NIST-JANAF (Chase 1998)"
+_JANAF = {
+    ("H2SO4", "l"): ThermoRecord(  # H-075, 283-600 K
+        -813.989, (MaierKelley(283.456, 600.0, 80.0059, 0.194857, 42715.4),), JANAF_FIT
+    ),
+    ("H2O", "g"): ThermoRecord(  # H-064, gas ideal, 200-800 K
+        -241.826, (MaierKelley(200.0, 800.0, 29.1426, 0.0117234, 76507.8),), JANAF_FIT
+    ),
+}
+
+# Wu y Young (1980), Tabla 5: √m (mol^1/2 kg^-1/2) -> ΦL (cal/mol)
+_WU_YOUNG = (
+    (0.0, 0),
+    (0.005, 40),
+    (0.01, 120),
+    (0.02, 370),
+    (0.03, 680),
+    (0.04, 1015),
+    (0.05, 1340),
+    (0.06, 1640),
+    (0.07, 1910),
+    (0.08, 2160),
+    (0.09, 2380),
+    (0.10, 2585),
+    (0.12, 2935),
+    (0.14, 3220),
+    (0.16, 3450),
+    (0.18, 3650),
+    (0.20, 3820),
+    (0.22, 3965),
+    (0.24, 4090),
+    (0.26, 4200),
+    (0.28, 4300),
+    (0.30, 4370),
+    (0.35, 4550),
+    (0.40, 4690),
+    (0.45, 4801),
+    (0.50, 4892),
+    (0.55, 4969),
+    (0.60, 5031),
+    (0.65, 5086),
+    (0.70, 5133),
+    (0.75, 5175),
+    (0.80, 5214),
+    (0.85, 5249),
+    (0.90, 5282),
+    (0.95, 5312),
+    (1.00, 5342),
+    (1.10, 5400),
+    (1.20, 5460),
+    (1.30, 5522),
+    (1.40, 5589),
+    (1.50, 5665),
+    (1.60, 5752),
+    (1.70, 5852),
+    (1.80, 5967),
+    (1.90, 6095),
+    (2.00, 6237),
+    (2.20, 6567),
+    (2.40, 6958),
+    (2.60, 7368),
+    (3.00, 8267),
+)
+# NBS 1982 (Wagman et al.), «H2SO4 in n H2O», ΔfH en kJ/mol, para n < 6,17 (m > 9 mol/kg)
+NBS_H2SO4_IN_N_H2O = {
+    1.0: -841.791,
+    1.5: -849.888,
+    2.0: -855.440,
+    2.5: -859.611,
+    3.0: -862.912,
+    3.5: -865.611,
+    4.0: -867.879,
+    4.5: -869.808,
+    5.0: -871.477,
+    5.5: -872.937,
+    6.0: -874.222,
+}
+NBS_H2SO4_AI = -909.27
+WATER_MOL_PER_KG = 1000.0 / 18.0153
+
+
+def _h2so4_apparent() -> ApparentEnthalpy:
+    points = [(x, cal * 4.184e-3) for x, cal in _WU_YOUNG]
+    for n in sorted(NBS_H2SO4_IN_N_H2O, reverse=True):  # m crece al bajar n
+        points.append(((WATER_MOL_PER_KG / n) ** 0.5, NBS_H2SO4_IN_N_H2O[n] - NBS_H2SO4_AI))
+    return ApparentEnthalpy(
+        tuple(x for x, _ in points), tuple(y for _, y in points), "Wu y Young 1980; NBS 1982"
+    )
+
+
+_CODATA[("H2SO4", "aq")] = ThermoRecord(
+    _CODATA[("H2SO4", "aq")].dfh298,
+    _CODATA[("H2SO4", "aq")].ranges,
+    CODATA + "; ΦL de Wu y Young (1980) y NBS (1982)",
+    _h2so4_apparent(),
+)
+
+DEFAULT_THERMO = ThermoDatabase({**_NIST, **_USGS, **_CODATA, **_JANAF})

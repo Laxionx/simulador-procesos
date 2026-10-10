@@ -1,13 +1,15 @@
 # Fase 2: la misma lixiviación del caso 2, ahora con balance de calor.
-# Las alimentaciones entran a distinta temperatura; el reactor es adiabático (la disolución del
-# CuO libera calor) y un calentador lleva la solución a 30 °C antes de la extracción por
-# solventes. El ácido entra ya diluido (H2SO4 acuoso): el calor de dilución no se modela.
+# Las alimentaciones entran a distinta temperatura. El ácido llega CONCENTRADO (98 %, H2SO4
+# líquido) y se disuelve en el reactor: su calor de dilución (Wu y Young 1980; NBS 1982) se suma
+# al de la lixiviación del CuO. El reactor es adiabático y un intercambiador lleva la solución
+# a 30 °C antes de la extracción por solventes.
 nombre: Lixiviación de óxidos de cobre con balance de calor
 balance_de_calor: true
 especies:
   - {nombre: CuO, fase: s}
   - {nombre: CaCO3, fase: s}
   - {nombre: SiO2, fase: s}
+  - {nombre: "H2SO4(l)", fase: l}
   - {nombre: H2SO4, fase: aq}
   - {nombre: H2O, fase: l}
   - {nombre: CuSO4, fase: aq}
@@ -15,7 +17,7 @@ especies:
   - {nombre: CO2, fase: g}
 alimentaciones:
   Mineral: {flujos: {CuO: 1500.0, CaCO3: 800.0, SiO2: 97700.0}, temperatura: 20}
-  Acido: {flujos: {H2SO4: 3000.0}, temperatura: 25}
+  Acido: {flujos: {"H2SO4(l)": 3000.0, H2O: 61.2}, temperatura: 25}
   Agua: {flujos: {H2O: 150000.0}, temperatura: 18}
 equipos:
   - tipo: mezclador
@@ -27,14 +29,15 @@ equipos:
     entradas: [Pulpa]
     salidas: [Descarga]
     reacciones:
+      - {ecuacion: "H2SO4(l) -> H2SO4", clave: "H2SO4(l)", conversion: 1.0}
       - {ecuacion: "CuO + H2SO4 -> CuSO4 + H2O", clave: CuO, conversion: 0.90}
       - {ecuacion: "CaCO3 + H2SO4 -> CaSO4 + H2O + CO2", clave: CaCO3, conversion: 1.0}
   - tipo: calentador
-    nombre: Calentador
+    nombre: Intercambiador
     entradas: [Descarga]
     salidas: [PLS]
     temperatura: 30
 controladores:
   - nombre: Acidez libre
-    ajustar: {alimentacion: Acido, especie: H2SO4, minimo: 0, maximo: 20000}
+    ajustar: {alimentacion: Acido, especie: "H2SO4(l)", minimo: 0, maximo: 20000}
     meta: {corriente: PLS, propiedad: g_por_kg_agua, especie: H2SO4, valor: 5}

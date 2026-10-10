@@ -14,6 +14,7 @@ import math
 from collections.abc import Mapping
 from dataclasses import dataclass
 
+import numpy as np
 from scipy.optimize import brentq
 
 from .elements import strip_phase
@@ -106,10 +107,44 @@ CpModel = Shomate | MaierKelley | ConstantCp
 
 
 @dataclass(frozen=True)
+class ApparentEnthalpy:
+    """Entalpía molal aparente relativa ΦL(m) de un soluto (kJ por mol de soluto), tabulada
+    contra √m y con interpolación monótona (PCHIP). Es lo que el soluto lleva de más frente a
+    la dilución infinita: al diluir, la diferencia de ΦL sale como calor."""
+
+    sqrt_m: tuple[float, ...]
+    phi_kj: tuple[float, ...]
+    source: str = ""
+
+    def _spline(self):
+        from scipy.interpolate import PchipInterpolator
+
+        return PchipInterpolator(np.asarray(self.sqrt_m), np.asarray(self.phi_kj))
+
+    @property
+    def max_molality(self) -> float:
+        return self.sqrt_m[-1] ** 2
+
+    def __call__(self, molality: float) -> float:
+        if molality < 0 or molality > self.max_molality * (1 + 1e-9):
+            raise ValueError(
+                f"Molalidad {molality:.4g} fuera de la tabla de ΦL (0 a {self.max_molality:.4g})"
+            )
+        return float(self._spline()(math.sqrt(molality)))
+
+    def partial(self, molality: float) -> float:
+        """Entalpía molal parcial relativa del soluto, L2 = ΦL + (√m/2) dΦL/d√m."""
+        x = math.sqrt(molality)
+        spline = self._spline()
+        return float(spline(x) + x / 2.0 * spline.derivative()(x))
+
+
+@dataclass(frozen=True)
 class ThermoRecord:
     dfh298: float  # kJ/mol
     ranges: tuple[CpModel, ...]
     source: str
+    apparent: ApparentEnthalpy | None = None
 
     def model(self, temp_k: float) -> CpModel:
         first, last = self.ranges[0], self.ranges[-1]
@@ -157,15 +192,34 @@ class ThermoDatabase:
         return key in self._records
 
 
+def _liquid_water_kg(flows: Mapping[str, float], catalog: Catalog) -> float:
+    return sum(
+        f
+        for n, f in flows.items()
+        if catalog[n].phase == "l" and strip_phase(catalog[n].formula)[0] == "H2O"
+    )
+
+
 def stream_enthalpy(flows: Mapping[str, float], temperature: float, catalog: Catalog) -> float:
-    """Entalpía de una corriente en kW: Σ (kg/h ÷ kg/kmol) · kJ/mol · 1000 / 3600."""
+    """Entalpía de una corriente en kW: Σ (kg/h ÷ kg/kmol) · kJ/mol · 1000 / 3600. Los solutos
+    con ΦL suman su entalpía aparente a la molalidad de la corriente (calor de dilución)."""
     thermo = _thermo(catalog)
     temp_k = temperature + KELVIN
-    return sum(
-        flow / catalog[name].molar_mass * thermo.record(catalog[name]).enthalpy(temp_k) / 3.6
-        for name, flow in flows.items()
-        if flow > 0
-    )
+    total = 0.0
+    water = None
+    for name, flow in flows.items():
+        if flow <= 0:
+            continue
+        record = thermo.record(catalog[name])
+        kmol = flow / catalog[name].molar_mass
+        h = record.enthalpy(temp_k)
+        if record.apparent is not None:
+            water = _liquid_water_kg(flows, catalog) if water is None else water
+            if water <= 0:
+                raise ValueError(f"{name}: un soluto con calor de dilución necesita agua líquida")
+            h += record.apparent(kmol * 1000.0 / water)
+        total += kmol * h / 3.6
+    return total
 
 
 def temperature_for(

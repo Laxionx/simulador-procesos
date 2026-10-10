@@ -39,7 +39,7 @@ Planta: Lixiviación de óxidos de cobre
 
 Además, 3 plantas reales publicadas: la producción de Constancia (Hudbay), el ácido de lixiviación de Marimaca y los cátodos del plan minero de Puquios. Las tolerancias se fijaron antes de correr. Detalle y hallazgos en [docs/VALIDACION_PLANTAS_REALES.md](docs/VALIDACION_PLANTAS_REALES.md).
 
-137 pruebas (más 6 fallos esperados: redondeos de la fuente y el límite del modelo de actividad), cobertura del 97 % y ruff limpio:
+198 pruebas (más 9 fallos esperados: redondeos de la fuente, el límite del modelo de actividad y el del vapor ideal), cobertura del 98 % y ruff limpio:
 
 ```bash
 python -m pytest --cov=procesos
@@ -82,7 +82,7 @@ python -m procesos resolver ejemplos/lixiviacion_equilibrio.yaml
 ## Límites de esta versión
 
 - Sin `balance_de_calor`, la temperatura se transporta sin balancear: el mezclador la promedia por masa.
-- El balance de calor no modela cambios de fase, ni el Cp de los solutos acuosos, ni el calor de dilución del ácido concentrado (ver [docs/balance-de-calor.md](docs/balance-de-calor.md)).
+- El balance de calor ya incluye el calor de dilución del H2SO4 (Wu y Young 1980; NBS 1982) y la evaporación del agua (IAPWS-IF97). El vapor se trata como ideal, así que a varios bar el error pasa del 1,8 %, y no se modela la subida del punto de ebullición (ver [docs/balance-de-calor.md](docs/balance-de-calor.md)).
 - La presión se transporta pero no se balancea.
 - Los separadores usan recuperaciones fijas. Los modelos físicos de flotación, clasificación y molienda viven en el proyecto hermano `simulador-conminucion`.
 

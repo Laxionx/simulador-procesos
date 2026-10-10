@@ -12,7 +12,7 @@ from openpyxl import Workbook
 from .flowsheet import Flowsheet, Solution
 from .stream import element_flows, mix
 from .thermo import stream_enthalpy
-from .units import Heater, Reactor
+from .units import Evaporator, Heater, Reactor
 
 
 @dataclass(frozen=True)
@@ -107,7 +107,7 @@ def energy_balance(flowsheet: Flowsheet, solution: Solution) -> list[EnergyRow]:
         inputs = [solution.streams[n] for n in unit.inputs]
         duty = (
             unit.heat_duty(inputs, catalog)
-            if isinstance(unit, Heater)
+            if isinstance(unit, Heater | Evaporator)
             or (isinstance(unit, Reactor) and unit.temperature is not None)
             else 0.0
         )

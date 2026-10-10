@@ -1,0 +1,18 @@
+# B1: evaporador a presión atmosférica que concentra una solución diluida de ácido sulfúrico.
+# El calor lleva la solución a ebullición (99,97 °C, IAPWS-IF97) y evapora parte del agua; al
+# concentrarse, el ácido cambia su entalpía aparente (calor de dilución, Wu y Young 1980).
+nombre: Evaporador de solución ácida
+balance_de_calor: true
+especies:
+  - {nombre: H2O, fase: l}
+  - {nombre: Vapor, formula: H2O, fase: g}
+  - {nombre: H2SO4, fase: aq}
+alimentaciones:
+  Solucion: {flujos: {H2O: 10000.0, H2SO4: 500.0}, temperatura: 40}
+equipos:
+  - tipo: evaporador
+    nombre: Evaporador
+    entradas: [Solucion]
+    salidas: [Concentrado, Vahos]
+    calor_kw: 2500
+    presion_kpa: 101.325

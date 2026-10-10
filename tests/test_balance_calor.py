@@ -177,6 +177,15 @@ def test_reactor_isotermico_calor_de_reaccion_a_mano():
     dr_cu = DFH["CuSO4"] + DFH["H2O"] - DFH["CuO"] - DFH["H2SO4"]
     dr_ca = DFH["CaSO4"] + DFH["H2O"] + DFH["CO2"] - DFH["CaCO3"] - DFH["H2SO4"]
     expected = (xi_cu * dr_cu + xi_ca * dr_ca) / 3.6  # kmol/h · kJ/mol -> kW
+    # Desde B1, el H2SO4 acuoso lleva su entalpía aparente ΦL (calor de dilución) a la molalidad
+    # de cada corriente: el ácido consumido libera la que traía.
+    phi = DEFAULT_THERMO.record(catalog["H2SO4"]).apparent
+    acid_in = 3000.0 / catalog["H2SO4"].molar_mass
+    acid_out = acid_in - xi_cu - xi_ca
+    water_out = 150000.0 + (xi_cu + xi_ca) * catalog["H2O"].molar_mass
+    expected += (
+        acid_out * phi(acid_out * 1000 / water_out) - acid_in * phi(acid_in * 1000 / 150000.0)
+    ) / 3.6
     assert duty == pytest.approx(expected, rel=1e-4)
     assert duty < 0  # la lixiviación del CuO libera calor: hay que retirarlo para seguir a 25 °C
 
@@ -232,7 +241,7 @@ def test_planta_yaml_con_balance_de_calor_y_errores():
     result = solve_with_controllers(plant.flowsheet, plant.controllers)
     assert worst_closure(result.flowsheet, result.solution) < 1e-9
     rows = {r.name: r for r in energy_balance(result.flowsheet, result.solution)}
-    assert rows["Calentador"].duty > 0
+    assert rows["Intercambiador"].duty > 0
     assert rows["Lixiviación"].duty == 0.0
     assert result.solution.streams["PLS"].temperature == pytest.approx(30.0)
     with pytest.raises(ValueError, match="Sin datos termodinámicos"):

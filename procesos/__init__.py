@@ -11,12 +11,13 @@ from .species import Catalog, Species, make_species
 from .stream import Stream, element_flows, mix, moles
 from .thermo import ThermoDatabase, ThermoRecord, stream_enthalpy, temperature_for
 from .thermo_data import DEFAULT_THERMO
-from .units import Heater, Mixer, Reactor, Separator, Splitter
+from .units import Evaporator, Heater, Mixer, Reactor, Separator, Splitter
 
 __all__ = [
     "Catalog",
     "ControlError",
     "DEFAULT_THERMO",
+    "Evaporator",
     "Controller",
     "ConvergenceError",
     "Flowsheet",

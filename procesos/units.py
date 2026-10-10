@@ -13,10 +13,16 @@ from dataclasses import dataclass, replace
 from types import MappingProxyType
 from typing import Protocol
 
+from scipy.optimize import brentq
+
+from .elements import strip_phase
 from .reactions import Reaction
+from .saturation import tsat_c
 from .species import Catalog
 from .stream import Stream, mix, moles
 from .thermo import stream_enthalpy, temperature_for
+
+DEFAULT_LIMIT_C = 500.0  # °C: tope de búsqueda para vapor sobrecalentado
 
 
 class Unit(Protocol):
@@ -308,6 +314,107 @@ class Heater:
             return replace(self, temperature=None, duty_kw=value)
         raise KeyError(
             f"{self.name}: parámetro desconocido {key!r}; use 'temperatura' o 'calor_kw'"
+        )
+
+
+@dataclass(frozen=True)
+class Evaporator:
+    """Evaporador o flash a presión fija (fase 2b). Agrega un calor (kW) y reparte el agua entre
+    líquido y vapor según la saturación IAPWS-IF97. Salidas: (líquido, vapor). Los gases van al
+    vapor; sólidos y solutos, al líquido. No modela la elevación del punto de ebullición por los
+    solutos ni la presión parcial de otros gases."""
+
+    name: str
+    inputs: tuple[str, ...]
+    outputs: tuple[str, ...]
+    duty_kw: float = 0.0
+    pressure_kpa: float = 101.325
+
+    def __post_init__(self) -> None:
+        _check_ports(self.name, self.inputs, self.outputs, 2)
+        if not math.isfinite(float(self.duty_kw)) or not self.pressure_kpa > 0:
+            raise ValueError(f"{self.name}: calor finito y presión positiva")
+
+    def _water_names(self, catalog: Catalog) -> tuple[str, str]:
+        liquid = vapor = None
+        for sp in catalog:
+            if strip_phase(sp.formula)[0] == "H2O":
+                if sp.phase == "l":
+                    liquid = sp.name
+                elif sp.phase == "g":
+                    vapor = sp.name
+        if liquid is None or vapor is None:
+            raise ValueError(f"{self.name}: el catálogo necesita agua líquida y vapor (fase g)")
+        return liquid, vapor
+
+    def compute(self, inputs: Sequence[Stream], catalog: Catalog) -> tuple[Stream, ...]:
+        if catalog.thermo is None:
+            raise ValueError(f"{self.name}: el evaporador exige activar el balance de calor")
+        liquid_name, vapor_name = self._water_names(catalog)
+        feed = _mixed(inputs, catalog)
+        target = inlet_enthalpy(inputs, catalog) + float(self.duty_kw)
+        water = feed.flow(liquid_name) + feed.flow(vapor_name)
+        gases = {n: f for n, f in feed.flows.items() if catalog[n].phase == "g" and n != vapor_name}
+        rest = {n: f for n, f in feed.flows.items() if catalog[n].phase != "g" and n != liquid_name}
+
+        def split(v: float) -> tuple[dict[str, float], dict[str, float]]:
+            liq = dict(rest)
+            liq[liquid_name] = water - v
+            vap = dict(gases)
+            vap[vapor_name] = v
+            return liq, vap
+
+        def enthalpy(t: float, v: float) -> float:
+            liq, vap = split(v)
+            return stream_enthalpy(liq, t, catalog) + stream_enthalpy(vap, t, catalog)
+
+        # Agua mínima que debe quedar: la que mantiene a los solutos con ΦL dentro de su tabla.
+        keep = 0.0
+        for n, f in rest.items():
+            apparent = catalog.thermo.record(catalog[n]).apparent
+            if apparent is not None and f > 0:
+                keep += f / catalog[n].molar_mass * 1000.0 / apparent.max_molality
+        v_max = max(water - keep, 0.0)
+        t_sat = tsat_c(self.pressure_kpa)
+        if enthalpy(t_sat, 0.0) >= target:  # no llega a hervir
+            liq, vap = split(0.0)
+            t = temperature_for({**liq, **vap}, target, catalog, feed.temperature)
+        elif enthalpy(t_sat, v_max) >= target:  # hierve en parte, a la temperatura de saturación
+            v = brentq(lambda x: enthalpy(t_sat, x) - target, 0.0, v_max, xtol=1e-12, rtol=1e-14)
+            liq, vap = split(v)
+            t = t_sat
+        elif v_max < water:
+            raise ValueError(
+                f"{self.name}: el calor concentraría los solutos más allá de sus datos de "
+                "dilución; baje el calor (además, no se modela la subida del punto de ebullición)"
+            )
+        else:  # todo el agua se evapora y el vapor se sobrecalienta
+            liq, vap = split(water)
+            high = min(
+                DEFAULT_LIMIT_C,
+                *(
+                    catalog.thermo.record(catalog[n]).limits_k[1] - 273.15
+                    for n, f in {**liq, **vap}.items()
+                    if f > 0
+                ),
+            )
+            t = brentq(lambda x: enthalpy(x, water) - target, t_sat, high, xtol=1e-9)
+        return (
+            Stream(liq, t, self.pressure_kpa),
+            Stream(vap, t, self.pressure_kpa),
+        )
+
+    def heat_duty(self, inputs: Sequence[Stream], catalog: Catalog) -> float:
+        return float(self.duty_kw)
+
+    def with_parameter(self, key: str, value: float) -> Evaporator:
+        """``'calor_kw'`` o ``'presion_kpa'``."""
+        if key == "calor_kw":
+            return replace(self, duty_kw=value)
+        if key == "presion_kpa":
+            return replace(self, pressure_kpa=value)
+        raise KeyError(
+            f"{self.name}: parámetro desconocido {key!r}; use 'calor_kw' o 'presion_kpa'"
         )
 
 
