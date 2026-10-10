@@ -39,7 +39,7 @@ Planta: Lixiviación de óxidos de cobre
 
 Además, 3 plantas reales publicadas: la producción de Constancia (Hudbay), el ácido de lixiviación de Marimaca y los cátodos del plan minero de Puquios. Las tolerancias se fijaron antes de correr. Detalle y hallazgos en [docs/VALIDACION_PLANTAS_REALES.md](docs/VALIDACION_PLANTAS_REALES.md).
 
-198 pruebas (más 9 fallos esperados: redondeos de la fuente, el límite del modelo de actividad y el del vapor ideal), cobertura del 98 % y ruff limpio:
+213 pruebas (más 14 fallos esperados: redondeos de la fuente, los límites de los modelos de actividad y el del vapor ideal), cobertura del 98 % y ruff limpio:
 
 ```bash
 python -m pytest --cov=procesos
@@ -63,6 +63,9 @@ python -m procesos resolver ejemplos/lixiviacion_con_calor.yaml
 El equipo `equilibrio` decide por equilibrio cuánto se disuelve o precipita, por ejemplo el yeso en una solución de lixiviación, y da el pH. Usa PHREEQC del USGS (dominio público) mediante phreeqpy, y es opcional: `pip install -e ".[equilibrio]"`.
 - Validado contra la solubilidad del yeso en agua (+4,5 %) y en ácido sulfúrico hasta 0,4 mol/kg (±15 %).
 - Sobre una fuerza iónica de 0,5 mol/kg, el modelo de actividad se sale de rango, y está documentado.
+- Para soluciones concentradas, `base: pitzer_cu.dat` usa el modelo de Pitzer. Es la base pública del USGS más un bloque de cobre a 25 °C tomado de la literatura.
+  - El yeso en H2SO4 hasta 3 mol/kg queda entre −1,9 % y −5,4 %, y la calcantita en agua en −2,3 %.
+  - **No sirve para cobre con ácido libre:** sobreestima la solubilidad de la calcantita entre 14 y 113 % contra datos medidos, y el simulador avisa.
 
 Ver [docs/equilibrio.md](docs/equilibrio.md).
 
@@ -76,7 +79,7 @@ python -m procesos resolver ejemplos/lixiviacion_equilibrio.yaml
 |---|---|
 | 1 ✅ | Balance de masa con reacciones, reciclos y lazos de control |
 | 2 ✅ | Balance de calor: entalpías y temperaturas con datos públicos (NIST-JANAF, USGS, CODATA) |
-| 3 ✅ | Equilibrio químico acuoso con PHREEQC (minteq.v4); válido hasta una fuerza iónica de ~0,5 mol/kg |
+| 3 ✅ | Equilibrio químico acuoso con PHREEQC: minteq.v4 hasta una fuerza iónica de ~0,5 mol/kg; Pitzer para soluciones concentradas sin cobre ácido |
 | 4 | Diagrama interactivo, costos y reportes |
 
 ## Límites de esta versión

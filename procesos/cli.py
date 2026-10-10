@@ -11,7 +11,6 @@ from .control import ControlError, solve_with_controllers
 from .flowsheet import ConvergenceError
 from .plant_io import PlantFileError, load_plant
 from .report import (
-    IONIC_STRENGTH_LIMIT,
     element_balance,
     energy_balance,
     equilibrium_report,
@@ -59,10 +58,8 @@ def _solve(path: Path, output: Path | None) -> int:
         )
         if minerals:
             print(f"    Minerales: {minerals}")
-        if eq.ionic_strength > IONIC_STRENGTH_LIMIT:
-            print(
-                "    Aviso: fuerza iónica sobre 0,5 mol/kg, fuera del rango del modelo de actividad"
-            )
+        for warning in eq.warnings:
+            print(f"    Aviso: {warning}")
     closure = worst_closure(flowsheet, solution)
     print(f"  Peor error de cierre: {closure:.2e}")
     if output is not None:

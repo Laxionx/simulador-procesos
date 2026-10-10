@@ -8,9 +8,12 @@ El reactor de equilibrio:
 4. vuelve a las especies de la planta: cada metal disuelto a su única especie acuosa, el sulfato
    que sobra a H2SO4(aq) y el agua por el balance de hidrógeno. El oxígeno queda como control.
 
-Base de datos por defecto: minteq.v4.dat (EPA MINTEQA2 v4, distribuida con PHREEQC). Modelo de
-actividad: Debye-Hückel extendido / Davies, válido en soluciones diluidas (fuerza iónica hasta
-~0,5 mol/kg). Ver docs/equilibrio.md.
+Bases incluidas:
+- minteq.v4.dat (EPA MINTEQA2 v4, distribuida con PHREEQC), la de defecto: Debye-Hückel extendido /
+  Davies, válido en soluciones diluidas (fuerza iónica hasta ~0,5 mol/kg);
+- pitzer_cu.dat: pitzer.dat de PHREEQC 3.7.3 más un bloque de cobre a 25 °C (Justel et al., 2020),
+  para soluciones concentradas.
+Cada resultado trae los avisos de validez que correspondan a su base. Ver docs/equilibrio.md.
 """
 
 from __future__ import annotations
@@ -28,6 +31,9 @@ from .stream import Stream, element_flows, mix
 
 DATA_DIR = Path(__file__).resolve().parent / "data"
 DEFAULT_DATABASE = DATA_DIR / "minteq.v4.dat"
+PITZER_CU = DATA_DIR / "pitzer_cu.dat"
+IONIC_STRENGTH_LIMIT = 0.5  # mol/kg: hasta aquí vale Debye-Hückel extendido / Davies
+FREE_ACID_LIMIT = 0.01  # mol/kg: con cobre y más ácido libre, pitzer_cu.dat no está validada
 WATER = "H2O"
 MASTER = {"S": "S(6)", "C": "C(4)"}  # azufre como sulfato, carbono como carbonato
 NOT_TOTALS = {"H", "O"}
@@ -46,6 +52,7 @@ class EquilibriumResult:
     minerals_mol_h: Mapping[str, float]
     saturation: Mapping[str, float]
     flows: Mapping[str, float]  # salida en especies de la planta (kg/h)
+    warnings: tuple[str, ...] = ()  # fuera del rango validado del modelo de actividad
 
 
 @cache
@@ -59,6 +66,13 @@ def _engine(database: str) -> Any:
     engine = IPhreeqc()
     engine.load_database(database)
     return engine
+
+
+@cache
+def uses_pitzer(database: str) -> bool:
+    """La base activa el modelo de Pitzer de PHREEQC (tiene un bloque PITZER)."""
+    lines = Path(database).read_text(encoding="utf-8", errors="replace").splitlines()
+    return any(line.strip() == "PITZER" for line in lines)
 
 
 @cache
@@ -185,6 +199,7 @@ class EquilibriumReactor:
                 )
         saturation = {p: float(row[f"si_{p}"]) for p in self.minerals}
         flows = self._back_to_plant(feed, catalog, moles, minerals)
+        warnings = self._warnings(catalog, flows, float(row["mu"]), temp)
         return EquilibriumResult(
             float(row["pH"]),
             float(row["mu"]),
@@ -193,7 +208,36 @@ class EquilibriumReactor:
             MappingProxyType(minerals),
             MappingProxyType(saturation),
             MappingProxyType(flows),
+            warnings,
         )
+
+    def _warnings(
+        self, catalog: Catalog, flows: Mapping[str, float], ionic_strength: float, temp: float
+    ) -> tuple[str, ...]:
+        """Avisos de validez según la base (ver docs/equilibrio.md)."""
+        if not uses_pitzer(self.database):
+            if ionic_strength > IONIC_STRENGTH_LIMIT:
+                return (
+                    "fuerza iónica sobre 0,5 mol/kg, fuera del rango de Debye-Hückel "
+                    "(para soluciones concentradas: base pitzer_cu.dat)",
+                )
+            return ()
+        if Path(self.database).resolve() != PITZER_CU.resolve():
+            return ()
+        aqueous = [catalog[n] for n in flows if catalog[n].phase == "aq"]
+        if not any("Cu" in sp.composition and flows[sp.name] > 0 for sp in aqueous):
+            return ()
+        notes = []
+        if abs(temp - 25.0) > 0.5:
+            notes.append("los parámetros de Pitzer del cobre son solo de 25 °C")
+        acid = _find(aqueous, {"H": 2, "S": 1, "O": 4})
+        water_t_h = flows[WATER] / 1000.0
+        if acid is not None and flows[acid.name] / acid.molar_mass / water_t_h > FREE_ACID_LIMIT:
+            notes.append(
+                "cobre con ácido libre: no validado; con 1,5 a 9,8 mol/kg de H2SO4 la base "
+                "sobreestima la solubilidad de la calcantita entre 14 y 113 %"
+            )
+        return tuple(notes)
 
     def _back_to_plant(
         self,

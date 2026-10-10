@@ -147,3 +147,4 @@ def test_linea_de_comandos_informa_el_equilibrio(capsys):
     strong = Stream({"H2O": 1000.0, "H2SO4": 0.9 * m_acid}, 25.0)
     _, _, result = _solve(strong)
     assert result.ionic_strength > 0.5  # caso que la CLI marca con aviso
+    assert "Debye-Hückel" in result.warnings[0]
