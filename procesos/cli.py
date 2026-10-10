@@ -8,7 +8,9 @@ from collections.abc import Sequence
 from pathlib import Path
 
 from .control import ControlError, solve_with_controllers
+from .costs import operating_cost
 from .flowsheet import ConvergenceError
+from .html_report import html_report, write_html
 from .plant_io import PlantFileError, load_plant
 from .report import (
     element_balance,
@@ -21,13 +23,15 @@ from .report import (
 )
 
 
-def _solve(path: Path, output: Path | None) -> int:
+def _solve(path: Path, output: Path | None, html: Path | None = None) -> int:
     plant = load_plant(path)
     flowsheet = plant.flowsheet
     print(f"Planta: {plant.name}")
+    controls: dict[str, float] = {}
     if plant.controllers:
         controlled = solve_with_controllers(flowsheet, plant.controllers)
         flowsheet, solution = controlled.flowsheet, controlled.solution
+        controls = dict(controlled.values)
         for name, value in controlled.values.items():
             print(f"  Controlador «{name}»: {value:,.4f}")
         print(f"  Evaluaciones de la planta: {controlled.evaluations}")
@@ -62,6 +66,15 @@ def _solve(path: Path, output: Path | None) -> int:
             print(f"    Aviso: {warning}")
     closure = worst_closure(flowsheet, solution)
     print(f"  Peor error de cierre: {closure:.2e}")
+    if plant.costs is not None:
+        cost = operating_cost(flowsheet, solution, plant.costs)
+        print(
+            f"  Costo operativo: {cost.total_per_h:,.2f} {cost.currency}/h · "
+            f"{cost.per_tonne:,.4f} {cost.currency}/t de {cost.basis_label}"
+        )
+    if html is not None:
+        report = html_report(plant, flowsheet, solution, controls)
+        print(f"  Reporte: {write_html(report, html)}")
     if output is not None:
         rows = stream_table(flowsheet, solution)
         stem = path.stem
@@ -80,11 +93,12 @@ def main(argv: Sequence[str] | None = None) -> int:
     solve.add_argument(
         "--salida", type=Path, default=None, help="Carpeta para la tabla CSV y Excel"
     )
+    solve.add_argument("--html", type=Path, default=None, help="Archivo del reporte HTML")
     args = parser.parse_args(argv)
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(encoding="utf-8")  # tildes legibles en consolas de Windows
     try:
-        return _solve(args.planta, args.salida)
+        return _solve(args.planta, args.salida, args.html)
     except (PlantFileError, ControlError, ConvergenceError, OSError) as error:
         print(f"Error: {error}", file=sys.stderr)
         return 1

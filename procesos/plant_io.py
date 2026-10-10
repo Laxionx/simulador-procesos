@@ -10,6 +10,7 @@ from typing import Any
 import yaml
 
 from .control import Controller, Goal, Manipulated
+from .costs import CostSpec
 from .equilibrium import EquilibriumReactor, database_path
 from .flowsheet import Flowsheet
 from .reactions import Reaction, parse_equation
@@ -24,6 +25,7 @@ class Plant:
     name: str
     flowsheet: Flowsheet
     controllers: tuple[Controller, ...]
+    costs: CostSpec | None = None
 
 
 class PlantFileError(ValueError):
@@ -172,6 +174,37 @@ def _controller(data: Any, index: int) -> Controller:
         raise PlantFileError(f"controlador {name!r}: {error}") from error
 
 
+def _costs(data: Any, flowsheet: Flowsheet) -> CostSpec | None:
+    if data is None:
+        return None
+    basis = _require(data, "por_tonelada_de", "costos")
+    prices = data.get("precios_por_t") or {}
+    if not isinstance(basis, Mapping) or not isinstance(prices, Mapping):
+        raise PlantFileError(
+            "costos: 'por_tonelada_de' debe ser {corriente, elemento opcional} y "
+            "'precios_por_t' un mapa especie → precio"
+        )
+    try:
+        spec = CostSpec(
+            str(_require(basis, "corriente", "costos.por_tonelada_de")),
+            {str(k): float(v) for k, v in prices.items()},
+            None if basis.get("elemento") is None else str(basis["elemento"]),
+            float(data.get("calor_por_kwh", 0.0)),
+            float(data.get("frio_por_kwh", 0.0)),
+            float(data.get("fijo_por_h", 0.0)),
+            str(data.get("moneda", "USD")),
+        )
+    except (TypeError, ValueError) as error:
+        raise PlantFileError(f"costos: {error}") from error
+    unknown = sorted(set(spec.prices_per_t) - set(flowsheet.catalog.names))
+    if unknown:
+        raise PlantFileError(f"costos: especies desconocidas {unknown}")
+    streams = set(flowsheet.feeds) | {o for u in flowsheet.units for o in u.outputs}
+    if spec.basis_stream not in streams:
+        raise PlantFileError(f"costos: la corriente base {spec.basis_stream!r} no existe")
+    return spec
+
+
 def load_plant(source: str | Path) -> Plant:
     """Carga una planta desde la ruta de un ``.yaml`` o desde el texto YAML."""
     text = (
@@ -208,4 +241,5 @@ def load_plant(source: str | Path) -> Plant:
     except ValueError as error:
         raise PlantFileError(f"planta: {error}") from error
     controllers = tuple(_controller(c, i) for i, c in enumerate(data.get("controladores") or []))
-    return Plant(str(data.get("nombre", "Planta sin nombre")), flowsheet, controllers)
+    costs = _costs(data.get("costos"), flowsheet)
+    return Plant(str(data.get("nombre", "Planta sin nombre")), flowsheet, controllers, costs)

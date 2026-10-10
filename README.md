@@ -2,7 +2,7 @@
 
 Simulador de procesos metalúrgicos implementado **desde la literatura**: balance de masa y de calor de plantas con reacciones químicas, equilibrio acuoso, reciclos y lazos de control. Es independiente de cualquier software comercial.
 
-**Fases 1 a 3 (esta versión):** balance de masa y de calor en estado estacionario, y equilibrio químico acuoso con PHREEQC.
+**Fases 1 a 4 (esta versión):** balance de masa y de calor en estado estacionario, equilibrio químico acuoso con PHREEQC, y reporte HTML con diagrama de flujo y costo operativo.
 
 ```bash
 pip install -e .
@@ -39,7 +39,7 @@ Planta: Lixiviación de óxidos de cobre
 
 Además, 3 plantas reales publicadas: la producción de Constancia (Hudbay), el ácido de lixiviación de Marimaca y los cátodos del plan minero de Puquios. Las tolerancias se fijaron antes de correr. Detalle y hallazgos en [docs/VALIDACION_PLANTAS_REALES.md](docs/VALIDACION_PLANTAS_REALES.md).
 
-213 pruebas (más 14 fallos esperados: redondeos de la fuente, los límites de los modelos de actividad y el del vapor ideal), cobertura del 98 % y ruff limpio:
+224 pruebas (más 14 fallos esperados: redondeos de la fuente, los límites de los modelos de actividad y el del vapor ideal), cobertura del 98 % y ruff limpio:
 
 ```bash
 python -m pytest --cov=procesos
@@ -73,6 +73,18 @@ Ver [docs/equilibrio.md](docs/equilibrio.md).
 python -m procesos resolver ejemplos/lixiviacion_equilibrio.yaml
 ```
 
+## Reporte HTML y costo operativo (fase 4)
+
+```bash
+python -m procesos resolver ejemplos/lixiviacion_con_calor.yaml --html salidas/lixiviacion.html
+```
+
+Genera un solo archivo HTML, sin JavaScript ni recursos externos. Trae el diagrama de flujo con los reciclos marcados, las corrientes, los balances, el equilibrio y el costo operativo por hora y por tonelada. El costo usa los precios que se ponen en la sección `costos:` del YAML. El costo de capital no se estima.
+
+![Reporte HTML](docs/img/reporte_html.png)
+
+Ver [docs/reporte-y-costos.md](docs/reporte-y-costos.md).
+
 ## Hoja de ruta
 
 | Fase | Contenido |
@@ -80,7 +92,7 @@ python -m procesos resolver ejemplos/lixiviacion_equilibrio.yaml
 | 1 ✅ | Balance de masa con reacciones, reciclos y lazos de control |
 | 2 ✅ | Balance de calor: entalpías y temperaturas con datos públicos (NIST-JANAF, USGS, CODATA) |
 | 3 ✅ | Equilibrio químico acuoso con PHREEQC: minteq.v4 hasta una fuerza iónica de ~0,5 mol/kg; Pitzer para soluciones concentradas sin cobre ácido |
-| 4 | Diagrama interactivo, costos y reportes |
+| 4 ✅ | Reporte HTML con diagrama de flujo y costo operativo; sin costo de capital (no hay correlaciones públicas validadas) |
 
 ## Límites de esta versión
 

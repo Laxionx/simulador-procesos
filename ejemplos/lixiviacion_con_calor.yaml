@@ -41,3 +41,10 @@ controladores:
   - nombre: Acidez libre
     ajustar: {alimentacion: Acido, especie: "H2SO4(l)", minimo: 0, maximo: 20000}
     meta: {corriente: PLS, propiedad: g_por_kg_agua, especie: H2SO4, valor: 5}
+# Fase 4: costo operativo. Los precios son ILUSTRATIVOS, no de mercado: ponga los de su operación.
+costos:
+  moneda: USD
+  por_tonelada_de: {corriente: Mineral}  # o {corriente: X, elemento: Cu}
+  precios_por_t: {"H2SO4(l)": 150, H2O: 0.8}
+  calor_por_kwh: 0.03
+  fijo_por_h: 250
