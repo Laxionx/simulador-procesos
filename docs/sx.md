@@ -120,6 +120,23 @@ Para comprobar que las pruebas pueden fallar, se metieron 4 errores a propósito
 
 La última sobrevivía al principio, porque con densidades cercanas a 1 apenas mueve el pH. La detecta la verificación de la tabla contra el pH directo, que se agregó por eso.
 
+## Otra base: Fuentes et al. (2023)
+
+Se probó la actividad del H⁺ con `database: cu_h2so4_fuentes.dat`, un modelo coherente del sistema CuSO₄–H₂SO₄–H₂O (ver `docs/equilibrio.md`). Las tolerancias se fijaron antes de correr (`tests/test_fuentes.py`).
+
+| Prueba | Fuentes | `pitzer_cu.dat` | Referencia |
+|---|---|---|---|
+| pH del refino de Devi | 1,03 ✅ | — | 0,9 ± 0,2 |
+| Devi: un contacto, 2 etapas y despojo | ✅ | ✅ | mismas tolerancias |
+| **pH del PLS de Mitshabu** | **1,74** ❌ | **1,81** ❌ | 1,46 ± 0,15 |
+| **Despojo de una etapa de Isocalc: orgánico despojado** | **5,34 g/L** ❌ | 3,10 ✅ | 3,12 |
+
+El pH del PLS con Fuentes se calcula sin Mg, porque su base no lo trae, y se le suma el efecto del Mg que da `pitzer_cu.dat` (+0,11), una aproximación declarada.
+
+**Hallazgos:**
+- **Dos modelos coherentes coinciden en el pH del PLS (1,74 y 1,81) y ninguno llega al 1,46 medido.** La diferencia no parece venir del modelo de actividad. Lo más probable es que venga de la referencia: un pH de electrodo a fuerza iónica ~1 no es directamente el pH termodinámico. También podrían influir especies que no se modelan, como Al y Fe³⁺. Por eso, en la extracción se mantiene la calibración con el pH medido.
+- **En el despojo exigente, Fuentes da menos actividad del H⁺** que `pitzer_cu.dat` (pH −0,06 contra −0,37 con 199 g/L de ácido) y despoja de menos. Para el despojo se recomienda `pitzer_cu.dat`, que reproduce a Isocalc.
+
 ## Hallazgos y límites
 
 - **Con el H⁺ ideal el despojo no cuadra.** En ácido concentrado, la actividad del H⁺ es mucho mayor que su concentración:

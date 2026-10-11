@@ -1,0 +1,82 @@
+# Base de PHREEQC del sistema CuSO4-H2SO4-H2O, de 0 a 100 °C (Pitzer).
+# Fuente de todos los valores: Fuentes, A.N.; Justel, F.J.; Jimenez, Y.P.; Casas, J.M. (2023),
+#   J. Mol. Liq. 391, 123377, doi:10.1016/j.molliq.2023.123377: Tablas 5 (constantes) y 7
+#   (parámetros de Pitzer). El modelo del H2SO4 es el de Fuentes y Casas, ref. [38] del artículo.
+# Única corrección: los coeficientes de la Tabla 5 están redondeados a 3 cifras y dan otro log K
+#   a 25 °C; se corrigió solo A1 para respetar el log K a 298,15 K que tabula el mismo artículo
+#   (ver la columna 'corrección'). Los parámetros de Pitzer van tal cual: P(T) = a0 + a3(T - 298,15).
+# Solo Cu, H y SO4. Validación y límites: docs/sx.md y docs/equilibrio.md de simulador-procesos.
+SOLUTION_MASTER_SPECIES
+E	e-	0	0	0
+H	H+	-1	H	1.008
+H(1)	H+	-1	0
+O	H2O	0	O	16.00
+O(-2)	H2O	0	0
+Cu	Cu+2	0	Cu	63.546
+S	SO4-2	0	SO4	32.064
+S(6)	SO4-2	0	SO4
+SOLUTION_SPECIES
+H+ = H+
+	-log_k 0
+e- = e-
+	-log_k 0
+H2O = H2O
+	-log_k 0
+Cu+2 = Cu+2
+	-log_k 0
+SO4-2 = SO4-2
+	-log_k 0
+H2O = OH- + H+
+	-analytic 294.0666307 0.136 -10600 -124 0 -7e-05  # log K(25 °C) = -13.99; corrección de A1 +1.0666
+SO4-2 + H+ = HSO4-
+	-analytic -5.334332154 0.0183 557 0 0 0  # log K(25 °C) = 1.99; corrección de A1 +0.0157
+SO4-2 + 2H+ = H2SO4
+	-analytic 2073.609978 0.28 -115000 -745 6100000 2.77e-05  # log K(25 °C) = -0.99; corrección de A1 +3.6100
+Cu+2 + SO4-2 = CuSO4
+	-analytic 0.935028 0.00488 0 0 0 0  # log K(25 °C) = 2.39; corrección de A1 +0.0040
+PHASES
+Chalcanthite
+	CuSO4:5H2O = Cu+2 + SO4-2 + 5H2O
+	-analytic 762.8175916 0.201 -21800 -304 0 0  # log K(25 °C) = -2.6; corrección de A1 +0.8176
+PITZER
+-B0
+  Cu+2 SO4-2               1.8  0  0  0.0421
+  H+ SO4-2                 0.565  0  0  0.000653
+  H+ HSO4-                 0.123  0  0  0.000673
+  Cu+2 HSO4-               -0.0853  0  0  -0.0812
+-B1
+  Cu+2 SO4-2               5.1  0  0  0.0298
+  H+ SO4-2                 -0.182  0  0  -8.27e-07
+  H+ HSO4-                 0.367  0  0  -0.000215
+  Cu+2 HSO4-               3.17  0  0  0.35
+-C0
+  Cu+2 SO4-2               0.327  0  0  -0.00234
+  H+ SO4-2                 0.248  0  0  0.000285
+  H+ HSO4-                 0.0406  0  0  -6.55e-05
+  Cu+2 HSO4-               1.15  0  0  0.0491
+-THETA
+  SO4-2 HSO4-              -0.0071  0  0  0.000261
+  Cu+2 H+                  -2.08  0  0  0.0127
+-PSI
+  H+ SO4-2 HSO4-           -0.255  0  0  3.56e-06
+  Cu+2 H+ HSO4-            0.418  0  0  -0.0104
+  Cu+2 SO4-2 HSO4-         0.399  0  0  0.00353
+  Cu+2 H+ SO4-2            0  0  0  0
+-LAMDA
+  CuSO4 Cu+2               -0.881  0  0  -0.0189
+  CuSO4 SO4-2              -1.28  0  0  -0.00919
+  CuSO4 CuSO4              0.817  0  0  -0.00397
+  H2SO4 H+                 -0.396  0  0  0.000757
+  H2SO4 HSO4-              -0.292  0  0  6.14e-05
+  H2SO4 H2SO4              0.292  0  0  -0.00126
+  CuSO4 H+                 0.947  0  0  -0.00739
+  CuSO4 HSO4-              -0.129  0  0  0.00919
+  H2SO4 Cu+2               1.27  0  0  -0.0108
+  CuSO4 H2SO4              -0.308  0  0  -0.00565
+-ZETA
+  CuSO4 Cu+2 SO4-2         0.781  0  0  0.0369
+  H2SO4 H+ HSO4-           0.24  0  0  0.00163
+  CuSO4 Cu+2 HSO4-         -0.263  0  0  -0.00796
+  H2SO4 Cu+2 HSO4-         2.73  0  0  -0.0101
+  H2SO4 Cu+2 SO4-2         0.829  0  0  0.0106
+END

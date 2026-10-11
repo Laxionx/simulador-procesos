@@ -39,7 +39,7 @@ Planta: Lixiviación de óxidos de cobre
 
 Además, 3 plantas reales publicadas: la producción de Constancia (Hudbay), el ácido de lixiviación de Marimaca y los cátodos del plan minero de Puquios. Las tolerancias se fijaron antes de correr. Detalle y hallazgos en [docs/VALIDACION_PLANTAS_REALES.md](docs/VALIDACION_PLANTAS_REALES.md).
 
-265 pruebas (más 18 fallos esperados: redondeos de la fuente, los límites de los modelos de actividad y el del vapor ideal), cobertura del 98 % y ruff limpio:
+279 pruebas (más 20 fallos esperados: redondeos de la fuente, los límites de los modelos de actividad y el del vapor ideal), cobertura del 98 % y ruff limpio:
 
 ```bash
 python -m pytest --cov=procesos
@@ -63,6 +63,7 @@ python -m procesos resolver ejemplos/lixiviacion_con_calor.yaml
 El equipo `equilibrio` decide por equilibrio cuánto se disuelve o precipita, por ejemplo el yeso en una solución de lixiviación, y da el pH. Usa PHREEQC del USGS (dominio público) mediante phreeqpy, y es opcional: `pip install -e ".[equilibrio]"`.
 - Validado contra la solubilidad del yeso en agua (+4,5 %) y en ácido sulfúrico hasta 0,4 mol/kg (±15 %).
 - Sobre una fuerza iónica de 0,5 mol/kg, el modelo de actividad se sale de rango, y está documentado.
+- Para cristalizar calcantita en ácido (hasta 3 mol/kg) está `base: cu_h2so4_fuentes.dat`, el modelo de Fuentes et al. (2023): reproduce la solubilidad medida a −3,7 %.
 - Para soluciones concentradas, `base: pitzer_cu.dat` usa el modelo de Pitzer. Es la base pública del USGS más un bloque de cobre a 25 °C tomado de la literatura.
   - El yeso en H2SO4 hasta 3 mol/kg queda entre −1,9 % y −5,4 %, y la calcantita en agua en −2,3 %.
   - **No sirve para cobre con ácido libre:** sobreestima la solubilidad de la calcantita entre 14 y 113 % contra datos medidos, y el simulador avisa.

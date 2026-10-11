@@ -9,3 +9,5 @@ htmlcov/
 *.egg-info/
 .env
 salidas/
+# volcado que escribe PHREEQC cuando un cálculo no converge
+error.inp

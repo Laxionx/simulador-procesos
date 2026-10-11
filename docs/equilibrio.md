@@ -129,3 +129,28 @@ Con `minteq.v4.dat` sigue el aviso de fuerza iónica sobre 0,5 mol/kg. Con Pitze
 **Otras bases que se probaron antes de elegir** (exploración, no validación):
 - `sit.dat` (ThermoChimie): mejora el yeso hasta ~0,6 mol/kg y se pasa por encima. Además, su licencia no está verificada, así que no se incluye.
 - `pitzer.dat` del repositorio actual: no carga en el IPhreeqc 3.7.3 de phreeqpy.
+
+## Base `cu_h2so4_fuentes.dat`: calcantita en ácido
+
+Es el modelo de Pitzer de Fuentes, Justel, Jimenez y Casas (2023), ajustado por sus autores en PHREEQC para CuSO₄–H₂SO₄–H₂O de 0 a 100 °C, cargado tal cual.
+- Incluye los pares neutros CuSO₄° y H₂SO₄° y su propio modelo del ácido.
+- Lo calibraron con la actividad del agua y la solubilidad de la calcantita hasta 3 mol/kg de H₂SO₄.
+- La única corrección es el redondeo de sus constantes; ver `procesos/data/LEEME.md`.
+
+Resuelve el fallo de `pitzer_cu.dat` con la calcantita en ácido, **dentro de su rango**:
+
+| Prueba | Referencia | Tolerancia | Resultado |
+|---|---|---|---|
+| log K a 25 °C de las 5 reacciones | Su Tabla 5 | ±0,02 | ✅ |
+| Calcantita en agua | Bell y Taber: 1,419 mol/kg | ±3 % | 1,414 ✅ |
+| Calcantita con 1,49 mol/kg de H₂SO₄ (no ciega: está en su ajuste) | Bell y Taber | ±5 % | −3,7 % ✅ (con `pitzer_cu.dat`, +14 %) |
+| pH de H₂SO₄ 0,01 N, 0,1 N y 1 N | PubChem/HSDB: 2,1; 1,2; 0,3 | ±0,1 | 2,13; 1,29; 0,38 ✅ |
+| Calcantita con 3,8 mol/kg (fuera de su rango) | Bell y Taber | — | −88 % |
+| Calcantita con 6,3 mol/kg o más | Bell y Taber | — | PHREEQC no converge |
+
+Úsese para cristalizar calcantita hasta 3 mol/kg de ácido, con `base: cu_h2so4_fuentes.dat` y `minerales: {Chalcanthite: "CuSO4·5H2O"}`. Solo trae Cu, H y SO₄.
+
+Para comprobar que las pruebas pueden fallar, se metieron 3 errores a propósito:
+- la calcantita sin corregir el redondeo: se detecta;
+- θ Cu–H con el signo cambiado: se detecta;
+- β₀ H–HSO₄ corrido 0,1: **no se detecta**. Los datos disponibles no son sensibles a ese parámetro; harían falta actividades medidas del ácido concentrado, que los autores también dejaron fuera de su ajuste.
