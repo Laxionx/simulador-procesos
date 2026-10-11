@@ -2,7 +2,7 @@
 
 Simulador de procesos metalúrgicos implementado **desde la literatura**: balance de masa y de calor de plantas con reacciones químicas, equilibrio acuoso, reciclos y lazos de control. Es independiente de cualquier software comercial.
 
-**Fases 1 a 4 (esta versión):** balance de masa y de calor en estado estacionario, equilibrio químico acuoso con PHREEQC, y reporte HTML con diagrama de flujo y costo operativo.
+**Fases 1 a 4 (esta versión):** balance de masa y de calor en estado estacionario, equilibrio químico acuoso con PHREEQC, extracción por solventes de cobre, y reporte HTML con diagrama de flujo y costo operativo.
 
 ```bash
 pip install -e .
@@ -39,7 +39,7 @@ Planta: Lixiviación de óxidos de cobre
 
 Además, 3 plantas reales publicadas: la producción de Constancia (Hudbay), el ácido de lixiviación de Marimaca y los cátodos del plan minero de Puquios. Las tolerancias se fijaron antes de correr. Detalle y hallazgos en [docs/VALIDACION_PLANTAS_REALES.md](docs/VALIDACION_PLANTAS_REALES.md).
 
-224 pruebas (más 14 fallos esperados: redondeos de la fuente, los límites de los modelos de actividad y el del vapor ideal), cobertura del 98 % y ruff limpio:
+251 pruebas (más 17 fallos esperados: redondeos de la fuente, los límites de los modelos de actividad y el del vapor ideal), cobertura del 98 % y ruff limpio:
 
 ```bash
 python -m pytest --cov=procesos
@@ -71,6 +71,18 @@ Ver [docs/equilibrio.md](docs/equilibrio.md).
 
 ```bash
 python -m procesos resolver ejemplos/lixiviacion_equilibrio.yaml
+```
+
+## Extracción por solventes de cobre
+
+Los equipos `extraccion_solventes` y `despojo` calculan, etapa por etapa y en contracorriente, cuánto cobre pasa al orgánico. Usan el equilibrio Cu²⁺ + 2 RH ⇌ CuR₂ + 2 H⁺ del LIX 984N (Devi y Nayak 2014), con eficiencia de Murphree y el ácido que se libera. El orgánico puede circular en circuito cerrado entre la extracción y el despojo.
+- **Extracción validada:** reproduce los experimentos de un contacto y de 2 etapas a contracorriente de Devi con un desvío de 2,3 % o menos. Con el orgánico de Isocalc recupera 89,4 % contra 92,8 %.
+- **Despojo no validado:** con ácido concentrado el H⁺ ideal despoja de menos, y el circuito completo recupera 70 % en vez de 93 %. Está documentado como fallo esperado.
+
+Ver [docs/sx.md](docs/sx.md).
+
+```bash
+python -m procesos resolver ejemplos/sx_2e1s.yaml
 ```
 
 ## Reporte HTML y costo operativo (fase 4)

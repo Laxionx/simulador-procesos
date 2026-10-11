@@ -24,6 +24,7 @@ KIND = {
     "Heater": "calentador",
     "Evaporator": "evaporador",
     "EquilibriumReactor": "equilibrio",
+    "SolventExtraction": "extracción SX",
 }
 
 

@@ -39,12 +39,19 @@ class Flowsheet:
         units: Sequence[Unit],
         feeds: Mapping[str, Stream],
         tears: Sequence[str] | None = None,
+        initial: Mapping[str, Stream] | None = None,
     ) -> None:
         self.catalog = catalog
         self.units = tuple(units)
         self.feeds = MappingProxyType(dict(feeds))
         self._validate()
         self.order, self.tears = self._sequence(None if tears is None else tuple(tears))
+        # estimación inicial de los cortes: necesaria en un lazo cerrado sin alimentación propia,
+        # como el orgánico entre extracción y despojo (fija cuánto circula)
+        self.initial = MappingProxyType(dict(initial or {}))
+        stray = sorted(set(self.initial) - set(self.tears))
+        if stray:
+            raise ValueError(f"Estimación inicial para {stray}, que no son corrientes de corte")
 
     # ------------------------------------------------------------------ validación
     def _validate(self) -> None:
@@ -129,13 +136,13 @@ class Flowsheet:
             raise KeyError(f"Especie desconocida: {species!r}")
         feeds = dict(self.feeds)
         feeds[feed] = feeds[feed].with_flow(species, value)
-        return Flowsheet(self.catalog, self.units, feeds, self.tears)
+        return Flowsheet(self.catalog, self.units, feeds, self.tears, self.initial)
 
     def with_unit_parameter(self, unit_name: str, key: str, value: float) -> Flowsheet:
         units = [u.with_parameter(key, value) if u.name == unit_name else u for u in self.units]
         if all(u.name != unit_name for u in self.units):
             raise KeyError(f"Equipo desconocido: {unit_name!r}")
-        return Flowsheet(self.catalog, units, self.feeds, self.tears)
+        return Flowsheet(self.catalog, units, self.feeds, self.tears, self.initial)
 
     # ------------------------------------------------------------------ cálculo
     def _encode(self, streams: Mapping[str, Stream]) -> np.ndarray:
@@ -175,6 +182,7 @@ class Flowsheet:
             streams, _ = self._pass(np.zeros(0))
             return Solution(MappingProxyType(streams), 1, True, (0.0,), ())
         guess = {t: Stream({}, STANDARD_TEMPERATURE, STANDARD_PRESSURE) for t in self.tears}
+        guess.update(self.initial)
         guess.update({k: v for k, v in (initial or {}).items() if k in self.tears})
         x = self._encode(guess)
         width = len(self.catalog) + 2

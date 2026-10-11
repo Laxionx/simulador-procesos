@@ -66,7 +66,7 @@ ATOMIC_WEIGHTS: dict[str, float] = {
     "U": 238.03,
 }
 
-_PHASE_SUFFIX = re.compile(r"\((aq|s|l|g)\)$")
+_PHASE_SUFFIX = re.compile(r"\((aq|s|l|g|org)\)$")
 _CHARGE_SUFFIX = re.compile(r"([+-])(\d*)$")
 _TOKEN = re.compile(r"([A-Z][a-z]?)|(\d+(?:\.\d+)?)|([(\[])|([)\]])")
 

@@ -139,3 +139,14 @@ def equilibrium_report(flowsheet: Flowsheet, solution: Solution) -> list[tuple[s
         for unit in flowsheet.units
         if isinstance(unit, EquilibriumReactor)
     ]
+
+
+def sx_report(flowsheet: Flowsheet, solution: Solution) -> list[tuple[str, Any]]:
+    """(nombre, SXResult) de cada equipo de extracción por solventes o despojo."""
+    from .sx import SolventExtraction
+
+    return [
+        (unit.name, unit.solve([solution.streams[n] for n in unit.inputs], flowsheet.catalog))
+        for unit in flowsheet.units
+        if isinstance(unit, SolventExtraction)
+    ]

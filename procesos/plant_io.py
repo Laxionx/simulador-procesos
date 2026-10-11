@@ -16,6 +16,7 @@ from .flowsheet import Flowsheet
 from .reactions import Reaction, parse_equation
 from .species import Catalog, make_species
 from .stream import STANDARD_PRESSURE, STANDARD_TEMPERATURE, Stream
+from .sx import KEX_LIX984N, SolventExtraction
 from .thermo_data import DEFAULT_THERMO
 from .units import Evaporator, Heater, Mixer, Reactor, Separator, Splitter, Unit
 
@@ -119,6 +120,26 @@ def _unit(data: Any, index: int) -> Unit:
                 float(data.get("calor_kw", 0.0)),
                 float(data.get("presion_kpa", 101.325)),
             )
+        if kind in ("extraccion_solventes", "despojo"):
+            efficiency = data.get("eficiencia", 1.0)
+            ph = data.get("ph_alimentacion")
+            return SolventExtraction(
+                name,
+                inputs,
+                outputs,
+                int(data.get("etapas", 1)),
+                float(data.get("kex", KEX_LIX984N)),
+                tuple(float(e) for e in efficiency)
+                if isinstance(efficiency, list)
+                else float(efficiency),
+                float(data.get("densidad_acuosa", 1.0)),
+                float(data.get("densidad_organica", 0.81)),
+                None if ph is None else float(ph),
+                copper=str(data.get("cobre_acuoso", "CuSO4")),
+                acid=str(data.get("acido", "H2SO4")),
+                extractant=str(data.get("extractante", "RH")),
+                complex=str(data.get("complejo", "CuR2")),
+            )
         if kind == "calentador":
             temperature, duty = data.get("temperatura"), data.get("calor_kw")
             return Heater(
@@ -132,7 +153,8 @@ def _unit(data: Any, index: int) -> Unit:
         raise PlantFileError(f"{where}: {error}") from error
     raise PlantFileError(
         f"{where}: tipo desconocido {kind!r} "
-        "(mezclador, divisor, separador, reactor, calentador, equilibrio, evaporador)"
+        "(mezclador, divisor, separador, reactor, calentador, equilibrio, evaporador, "
+        "extraccion_solventes, despojo)"
     )
 
 
@@ -234,9 +256,11 @@ def load_plant(source: str | Path) -> Plant:
     }
     units = [_unit(u, i) for i, u in enumerate(_require(data, "equipos", "planta"))]
     tears = data.get("cortes")
+    guesses = data.get("estimaciones") or {}
+    initial = {str(k): _stream(v, f"estimaciones {k!r}") for k, v in guesses.items()}
     try:
         flowsheet = Flowsheet(
-            catalog, units, feeds, None if tears is None else _names(tears, "cortes")
+            catalog, units, feeds, None if tears is None else _names(tears, "cortes"), initial
         )
     except ValueError as error:
         raise PlantFileError(f"planta: {error}") from error

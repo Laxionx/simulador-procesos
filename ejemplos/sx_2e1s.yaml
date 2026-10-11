@@ -1,0 +1,38 @@
+# Extracción por solventes 2E-1S con una oxima (LIX 984N) y el orgánico en circuito cerrado.
+# Condiciones del caso simulado con Isocalc por Mitshabu et al. (SAIMM Copper-Cobalt 2023): PLS de
+# 7,02 g/L de Cu a pH 1,46 con 30 g/L de sulfato, 300 m3/h; reactivo al 21 %v/v; electrolito pobre
+# de 33,67 g/L de Cu y 199,3 g/L de ácido. Ver docs/sx.md.
+# Límite conocido: con ácido concentrado el modelo trata el H+ como ideal y despoja de menos, así
+# que el orgánico vuelve más cargado y la recuperación sale baja (70 % frente a 93 % de Isocalc).
+nombre: Extracción por solventes 2E-1S con orgánico en circuito cerrado
+especies:
+  - {nombre: H2O, fase: l}
+  - {nombre: CuSO4, fase: aq}
+  - {nombre: H2SO4, fase: aq}
+  - {nombre: MgSO4, fase: aq}
+  - {nombre: RH, formula: C16H25NO2, fase: org}        # oxima libre
+  - {nombre: CuR2, formula: "Cu(C16H24NO2)2", fase: org}  # complejo de cobre
+  - {nombre: Diluyente, formula: C12H26, fase: org}
+alimentaciones:
+  PLS: {flujos: {CuSO4: 5289.4, H2SO4: 1170.0, MgSO4: 5852.5, H2O: 287688.1}, temperatura: 25}
+  Electrolito pobre: {flujos: {CuSO4: 13100.3, H2SO4: 30874.1, H2O: 141921.0}, temperatura: 40}
+# El orgánico no tiene alimentación propia: circula entre extracción y despojo. La estimación fija
+# cuánto circula (358 m3/h, O/A 1,19); la planta converge en su carga de cobre.
+cortes: [Organico descargado]
+estimaciones:
+  Organico descargado: {flujos: {RH: 23142.0, CuR2: 10352.6, Diluyente: 256532.9}}
+equipos:
+  - tipo: extraccion_solventes
+    nombre: Extracción
+    entradas: [PLS, Organico descargado]
+    salidas: [Refino, Organico cargado]
+    etapas: 2
+    eficiencia: [0.92, 0.95]   # E1 (entra el PLS) y E2 (entra el orgánico descargado)
+    ph_alimentacion: 1.46      # calibra la asociación del HSO4- con el pH medido del PLS
+  - tipo: despojo
+    nombre: Despojo
+    entradas: [Electrolito pobre, Organico cargado]
+    salidas: [Electrolito rico, Organico descargado]
+    etapas: 1
+    eficiencia: 0.95
+    densidad_acuosa: 1.2

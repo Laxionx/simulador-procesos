@@ -12,7 +12,7 @@ from .elements import molar_mass, parse_formula, split_charge, strip_phase
 if TYPE_CHECKING:
     from .thermo import ThermoDatabase
 
-PHASES = ("s", "l", "aq", "g")
+PHASES = ("s", "l", "aq", "g", "org")  # org: fase orgánica de la SX
 
 
 @dataclass(frozen=True)

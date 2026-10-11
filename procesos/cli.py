@@ -17,6 +17,7 @@ from .report import (
     energy_balance,
     equilibrium_report,
     stream_table,
+    sx_report,
     worst_closure,
     write_csv,
     write_xlsx,
@@ -64,6 +65,12 @@ def _solve(path: Path, output: Path | None, html: Path | None = None) -> int:
             print(f"    Minerales: {minerals}")
         for warning in eq.warnings:
             print(f"    Aviso: {warning}")
+    for name, sx in sx_report(flowsheet, solution):
+        print(
+            f"  SX «{name}»: Cu acuoso {sx.feed_aqueous_mol_l * 63.546:.3f} → "
+            f"{sx.raffinate_g_l:.3f} g/L · orgánico sale con {sx.loaded_g_l:.3f} g/L · "
+            f"pH {sx.ph[-1]:.2f} · transfiere {sx.transferred_mol_h * 63.546e-3:,.2f} kg/h de Cu"
+        )
     closure = worst_closure(flowsheet, solution)
     print(f"  Peor error de cierre: {closure:.2e}")
     if plant.costs is not None:
