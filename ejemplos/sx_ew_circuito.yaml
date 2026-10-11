@@ -1,0 +1,73 @@
+# Circuito SX-EW completo: extracción 2E-1S, despojo y electroobtención, con el orgánico y el
+# electrolito en circuito cerrado. La SX es la de sx_2e1s.yaml (caso Isocalc de Mitshabu et al.,
+# SAIMM Copper-Cobalt 2023). El electrolito agotado de la nave vuelve al despojo; se purga el
+# 1 % y se repone agua y ácido. La reposición se dimensionó a mano para que el electrolito pobre
+# quede cerca del de Isocalc (33,67 g/L de Cu y 199,3 g/L de ácido): agua = 1 % del agua que
+# circula + la que consume la nave; ácido = 1 % del que circula + el que se va con el Cu purgado.
+# El lazo de control ajusta la densidad de corriente para mantener el Cu del electrolito pobre en
+# 33,67 g/L (92,31 g de CuSO4 por kg de agua), como se opera una nave. Ver docs/ew.md.
+nombre: Circuito SX-EW con electrolito en circuito cerrado
+especies:
+  - {nombre: H2O, fase: l}
+  - {nombre: CuSO4, fase: aq}
+  - {nombre: H2SO4, fase: aq}
+  - {nombre: MgSO4, fase: aq}
+  - {nombre: RH, formula: C16H25NO2, fase: org}
+  - {nombre: CuR2, formula: "Cu(C16H24NO2)2", fase: org}
+  - {nombre: Diluyente, formula: C12H26, fase: org}
+  - {nombre: Cu, fase: s}
+  - {nombre: O2, fase: g}
+alimentaciones:
+  PLS: {flujos: {CuSO4: 5289.4, H2SO4: 1170.0, MgSO4: 5852.5, H2O: 287688.1}, temperatura: 25}
+  Reposicion: {flujos: {H2O: 1937.0, H2SO4: 388.0}, temperatura: 25}
+cortes: [Organico descargado, Electrolito pobre]
+estimaciones:
+  Organico descargado: {flujos: {RH: 23142.0, CuR2: 10352.6, Diluyente: 256532.9}}
+  Electrolito pobre: {flujos: {CuSO4: 13100.3, H2SO4: 30874.1, H2O: 141921.0}, temperatura: 50}
+equipos:
+  - tipo: extraccion_solventes
+    nombre: Extraccion
+    entradas: [PLS, Organico descargado]
+    salidas: [Refino, Organico cargado]
+    etapas: 2
+    eficiencia: [0.92, 0.95]
+    ph_alimentacion: 1.46
+  - tipo: despojo
+    nombre: Despojo
+    entradas: [Electrolito pobre, Organico cargado]
+    salidas: [Electrolito rico, Organico descargado]
+    etapas: 1
+    eficiencia: 0.95
+    densidad_acuosa: 1.2
+    acidez: pitzer
+  - tipo: calentador
+    nombre: Calentamiento
+    entradas: [Electrolito rico]
+    salidas: [Electrolito a celdas]
+    temperatura: 50
+  - tipo: electroobtencion
+    nombre: Electroobtencion
+    entradas: [Electrolito a celdas]
+    salidas: [Electrolito agotado, Catodos, Oxigeno]
+    densidad_corriente: 300       # A/m²; la ajusta el lazo de control
+    area_catodica: 5640           # m², las dos caras de todos los cátodos
+    eficiencia_corriente: 0.92
+  - tipo: divisor
+    nombre: Purga
+    entradas: [Electrolito agotado]
+    salidas: [Purga de electrolito, Electrolito de retorno]
+    fracciones: [0.01, 0.99]
+  - tipo: mezclador
+    nombre: Reposicion de electrolito
+    entradas: [Electrolito de retorno, Reposicion]
+    salidas: [Electrolito pobre]
+controladores:
+  - nombre: Cu del electrolito pobre
+    ajustar: {equipo: Electroobtencion, parametro: densidad_corriente, minimo: 150, maximo: 450}
+    meta: {corriente: Electrolito pobre, propiedad: g_por_kg_agua, especie: CuSO4, valor: 92.31}
+# Solo la electricidad: el costo cobra un reactivo en TODAS las alimentaciones, así que un precio
+# del H2SO4 cobraría también el ácido que ya trae el PLS.
+costos:
+  moneda: USD
+  por_tonelada_de: {corriente: Catodos, elemento: Cu}
+  electricidad_por_kwh: 0.08

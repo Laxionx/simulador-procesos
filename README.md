@@ -2,7 +2,7 @@
 
 Simulador de procesos metalúrgicos implementado **desde la literatura**: balance de masa y de calor de plantas con reacciones químicas, equilibrio acuoso, reciclos y lazos de control. Es independiente de cualquier software comercial.
 
-**Fases 1 a 4 (esta versión):** balance de masa y de calor en estado estacionario, equilibrio químico acuoso con PHREEQC, extracción por solventes de cobre, y reporte HTML con diagrama de flujo y costo operativo.
+**Fases 1 a 4 (esta versión):** balance de masa y de calor en estado estacionario, equilibrio químico acuoso con PHREEQC, extracción por solventes y electroobtención de cobre, y reporte HTML con diagrama de flujo y costo operativo.
 
 ```bash
 pip install -e .
@@ -39,7 +39,7 @@ Planta: Lixiviación de óxidos de cobre
 
 Además, 3 plantas reales publicadas: la producción de Constancia (Hudbay), el ácido de lixiviación de Marimaca y los cátodos del plan minero de Puquios. Las tolerancias se fijaron antes de correr. Detalle y hallazgos en [docs/VALIDACION_PLANTAS_REALES.md](docs/VALIDACION_PLANTAS_REALES.md).
 
-279 pruebas (más 20 fallos esperados: redondeos de la fuente, los límites de los modelos de actividad y el del vapor ideal), cobertura del 98 % y ruff limpio:
+297 pruebas (más 23 fallos esperados: redondeos de la fuente, los límites de los modelos de actividad y el del vapor ideal), cobertura del 98 % y ruff limpio:
 
 ```bash
 python -m pytest --cov=procesos
@@ -84,6 +84,19 @@ Ver [docs/sx.md](docs/sx.md).
 
 ```bash
 python -m procesos resolver ejemplos/sx_2e1s.yaml
+```
+
+## Electroobtención de cobre
+
+El equipo `electroobtencion` deposita el cobre por la ley de Faraday con la eficiencia de corriente y calcula el voltaje de celda por componentes: potencial reversible, sobrepotenciales anódico y catódico (Beukes y Badenhorst 2009), caída en el electrolito con la conductividad de Kalliomäki et al. (2021) y contactos. La electricidad entra al costo operativo y, con balance de calor, al balance de energía.
+- Con un electrolito típico a 300 A/m² da 2,18 V y 1.998 kWh/t, dentro de los rangos de la industria (1,9-2,3 V; 1.800-2.200 kWh/t). La producción de diseño de Gunnison (NI 43-101) es coherente con su corriente.
+- **Hallazgo:** la correlación de conductividad sobrestima en 9-12 % la medida en un electrolito de laboratorio (Fuentes 2022). En la celda, eso son ~0,03 V. Está documentado como fallo esperado.
+- `ejemplos/sx_ew_circuito.yaml` cierra el circuito SX-EW: el electrolito circula entre despojo y nave, con purga y reposición, y un lazo de control fija la corriente. Saca 1.839 kg/h de cátodos a 1.969 kWh/t.
+
+Ver [docs/ew.md](docs/ew.md).
+
+```bash
+python -m procesos resolver ejemplos/sx_ew_circuito.yaml
 ```
 
 ## Reporte HTML y costo operativo (fase 4)

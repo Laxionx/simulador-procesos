@@ -2,7 +2,8 @@
 
 - Reactivos: lo que entra por las alimentaciones, en t/h, por su precio por tonelada.
 - Energía: el calor de los calentadores, evaporadores y reactores isotérmicos. El que se agrega
-  se cobra al precio del calor; el que se retira, al del frío.
+  se cobra al precio del calor; el que se retira, al del frío. La electricidad de los equipos que
+  la consumen (electroobtención), al precio de la electricidad.
 - Un costo fijo por hora (mano de obra, mantención), si se da.
 
 La base «por tonelada» es el flujo total de una corriente, o el de un elemento contenido en ella
@@ -17,7 +18,7 @@ from dataclasses import dataclass, field
 from types import MappingProxyType
 
 from .flowsheet import Flowsheet, Solution
-from .report import energy_balance
+from .report import energy_balance, unit_power
 from .stream import element_flows
 
 
@@ -30,10 +31,17 @@ class CostSpec:
     cooling_per_kwh: float = 0.0
     fixed_per_h: float = 0.0
     currency: str = "USD"
+    electricity_per_kwh: float = 0.0
 
     def __post_init__(self) -> None:
         prices = dict(self.prices_per_t)
-        values = [*prices.values(), self.heat_per_kwh, self.cooling_per_kwh, self.fixed_per_h]
+        values = [
+            *prices.values(),
+            self.heat_per_kwh,
+            self.cooling_per_kwh,
+            self.fixed_per_h,
+            self.electricity_per_kwh,
+        ]
         if any(v < 0 for v in values):
             raise ValueError("costos: los precios no pueden ser negativos")
         object.__setattr__(self, "prices_per_t", MappingProxyType(prices))
@@ -93,6 +101,14 @@ def operating_cost(flowsheet: Flowsheet, solution: Solution, spec: CostSpec) -> 
             lines.append(
                 CostLine(f"Frío · {row.name}", -row.duty, "kW", spec.cooling_per_kwh, cost)
             )
+    if spec.electricity_per_kwh > 0:
+        for unit in flowsheet.units:
+            inputs = [solution.streams[n] for n in unit.inputs]
+            power = unit_power(unit, inputs, flowsheet.catalog)
+            if power > 0:
+                price = spec.electricity_per_kwh
+                concept = f"Electricidad · {unit.name}"
+                lines.append(CostLine(concept, power, "kW", price, power * price))
     if spec.fixed_per_h > 0:
         lines.append(CostLine("Fijo", 1.0, "h", spec.fixed_per_h, spec.fixed_per_h))
     basis_t_h, label = _basis(flowsheet, solution, spec)

@@ -25,6 +25,7 @@ KIND = {
     "Evaporator": "evaporador",
     "EquilibriumReactor": "equilibrio",
     "SolventExtraction": "extracción SX",
+    "Electrowinning": "electroobtención",
 }
 
 

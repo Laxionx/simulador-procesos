@@ -31,6 +31,7 @@ costos:
   precios_por_t: {"H2SO4(l)": 150, H2O: 0.8}   # lo que entra por las alimentaciones
   calor_por_kwh: 0.03                          # calor agregado (calentadores, evaporadores)
   frio_por_kwh: 0.0                            # calor retirado
+  electricidad_por_kwh: 0.08                   # electroobtención (ver docs/ew.md)
   fijo_por_h: 250                              # mano de obra, mantención
 ```
 

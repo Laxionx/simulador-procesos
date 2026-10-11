@@ -9,8 +9,10 @@ from typing import Any
 
 from openpyxl import Workbook
 
+from .ew import Electrowinning
 from .flowsheet import Flowsheet, Solution
-from .stream import element_flows, mix
+from .species import Catalog
+from .stream import Stream, element_flows, mix
 from .thermo import stream_enthalpy
 from .units import Evaporator, Heater, Reactor
 
@@ -79,17 +81,24 @@ def unit_balance(flowsheet: Flowsheet, solution: Solution) -> list[BalanceRow]:
 
 @dataclass(frozen=True)
 class EnergyRow:
-    """Balance de energía de un equipo (kW): entra + calor agregado = sale."""
+    """Balance de energía de un equipo (kW): entra + calor agregado + electricidad = sale."""
 
     name: str
     inflow: float
     duty: float
     outflow: float
+    power: float = 0.0
 
     @property
     def relative_error(self) -> float:
-        scale = max(abs(self.inflow), abs(self.outflow), abs(self.duty), 1e-9)
-        return abs(self.inflow + self.duty - self.outflow) / scale
+        scale = max(abs(self.inflow), abs(self.outflow), abs(self.duty), abs(self.power), 1e-9)
+        return abs(self.inflow + self.duty + self.power - self.outflow) / scale
+
+
+def unit_power(unit: object, inputs: list[Stream], catalog: Catalog) -> float:
+    """Potencia eléctrica (kW) que consume el equipo; 0 si no consume."""
+    power = getattr(unit, "power_kw", None)
+    return float(power(inputs, catalog)) if callable(power) else 0.0
 
 
 def energy_balance(flowsheet: Flowsheet, solution: Solution) -> list[EnergyRow]:
@@ -107,7 +116,7 @@ def energy_balance(flowsheet: Flowsheet, solution: Solution) -> list[EnergyRow]:
         inputs = [solution.streams[n] for n in unit.inputs]
         duty = (
             unit.heat_duty(inputs, catalog)
-            if isinstance(unit, Heater | Evaporator)
+            if isinstance(unit, Heater | Evaporator | Electrowinning)
             or (isinstance(unit, Reactor) and unit.temperature is not None)
             else 0.0
         )
@@ -117,6 +126,7 @@ def energy_balance(flowsheet: Flowsheet, solution: Solution) -> list[EnergyRow]:
                 sum(h(n) for n in unit.inputs),
                 duty,
                 sum(h(n) for n in unit.outputs),
+                unit_power(unit, inputs, catalog),
             )
         )
     return rows
@@ -138,6 +148,15 @@ def equilibrium_report(flowsheet: Flowsheet, solution: Solution) -> list[tuple[s
         (unit.name, unit.solve([solution.streams[n] for n in unit.inputs], flowsheet.catalog))
         for unit in flowsheet.units
         if isinstance(unit, EquilibriumReactor)
+    ]
+
+
+def ew_report(flowsheet: Flowsheet, solution: Solution) -> list[tuple[str, Any]]:
+    """(nombre, EWResult) de cada equipo de electroobtención."""
+    return [
+        (unit.name, unit.solve([solution.streams[n] for n in unit.inputs], flowsheet.catalog))
+        for unit in flowsheet.units
+        if isinstance(unit, Electrowinning)
     ]
 
 

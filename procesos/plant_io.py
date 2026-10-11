@@ -12,6 +12,7 @@ import yaml
 from .control import Controller, Goal, Manipulated
 from .costs import CostSpec
 from .equilibrium import EquilibriumReactor, database_path
+from .ew import CONTACTS_V, GAP_M, Electrowinning
 from .flowsheet import Flowsheet
 from .reactions import Reaction, parse_equation
 from .species import Catalog, make_species
@@ -141,6 +142,26 @@ def _unit(data: Any, index: int) -> Unit:
                 complex=str(data.get("complejo", "CuR2")),
                 acidity=str(data.get("acidez", "ideal")),
             )
+        if kind == "electroobtencion":
+            voltage, limiting = data.get("voltaje_celda"), data.get("densidad_limite")
+            return Electrowinning(
+                name,
+                inputs,
+                outputs,
+                float(_require(data, "densidad_corriente", where)),
+                float(_require(data, "area_catodica", where)),
+                float(data.get("eficiencia_corriente", 0.92)),
+                None if voltage is None else float(voltage),
+                float(data.get("distancia_anodo_catodo", GAP_M)),
+                float(data.get("contactos_v", CONTACTS_V)),
+                None if limiting is None else float(limiting),
+                float(data.get("densidad", 1.2)),
+                copper=str(data.get("cobre_acuoso", "CuSO4")),
+                acid=str(data.get("acido", "H2SO4")),
+                water=str(data.get("agua", "H2O")),
+                metal=str(data.get("metal", "Cu")),
+                oxygen=str(data.get("oxigeno", "O2")),
+            )
         if kind == "calentador":
             temperature, duty = data.get("temperatura"), data.get("calor_kw")
             return Heater(
@@ -155,7 +176,7 @@ def _unit(data: Any, index: int) -> Unit:
     raise PlantFileError(
         f"{where}: tipo desconocido {kind!r} "
         "(mezclador, divisor, separador, reactor, calentador, equilibrio, evaporador, "
-        "extraccion_solventes, despojo)"
+        "extraccion_solventes, despojo, electroobtencion)"
     )
 
 
@@ -216,6 +237,7 @@ def _costs(data: Any, flowsheet: Flowsheet) -> CostSpec | None:
             float(data.get("frio_por_kwh", 0.0)),
             float(data.get("fijo_por_h", 0.0)),
             str(data.get("moneda", "USD")),
+            float(data.get("electricidad_por_kwh", 0.0)),
         )
     except (TypeError, ValueError) as error:
         raise PlantFileError(f"costos: {error}") from error

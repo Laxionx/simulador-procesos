@@ -16,6 +16,7 @@ from .report import (
     element_balance,
     energy_balance,
     equilibrium_report,
+    ew_report,
     stream_table,
     sx_report,
     worst_closure,
@@ -47,9 +48,10 @@ def _solve(path: Path, output: Path | None, html: Path | None = None) -> int:
     if energy:
         print("  Balance de energía (kW):")
         for row in energy:
+            power = f" · electricidad {row.power:12,.1f}" if row.power else ""
             print(
                 f"    {row.name:>20}: entra {row.inflow:14,.1f} · calor {row.duty:12,.1f}"
-                f" · sale {row.outflow:14,.1f}"
+                f"{power} · sale {row.outflow:14,.1f}"
             )
         for name in flowsheet.products:
             print(f"    {name} sale a {solution.streams[name].temperature:.2f} °C")
@@ -71,6 +73,14 @@ def _solve(path: Path, output: Path | None, html: Path | None = None) -> int:
             f"{sx.raffinate_g_l:.3f} g/L · orgánico sale con {sx.loaded_g_l:.3f} g/L · "
             f"pH {sx.ph[-1]:.2f} · transfiere {sx.transferred_mol_h * 63.546e-3:,.2f} kg/h de Cu"
         )
+    for name, ew in ew_report(flowsheet, solution):
+        print(
+            f"  EW «{name}»: {ew.current_a / 1000:,.1f} kA · cátodos {ew.copper_kg_h:,.2f} kg/h · "
+            f"celda {ew.cell_voltage:.3f} V · {ew.specific_energy_kwh_t:,.0f} kWh/t · "
+            f"electrolito agotado {ew.spent_cu_g_l:.2f} g/L Cu y {ew.spent_acid_g_l:.1f} g/L ácido"
+        )
+        for warning in ew.warnings:
+            print(f"    Aviso: {warning}")
     closure = worst_closure(flowsheet, solution)
     print(f"  Peor error de cierre: {closure:.2e}")
     if plant.costs is not None:

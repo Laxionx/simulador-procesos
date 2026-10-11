@@ -15,7 +15,13 @@ from .costs import operating_cost
 from .diagram import flowsheet_svg
 from .flowsheet import Flowsheet, Solution
 from .plant_io import Plant
-from .report import element_balance, energy_balance, equilibrium_report, worst_closure
+from .report import (
+    element_balance,
+    energy_balance,
+    equilibrium_report,
+    ew_report,
+    worst_closure,
+)
 
 CSS = """
 :root{--papel:#f5f2ea;--tinta:#16181a;--gris:#6b6a63;--linea:#d6d0c2;--panel:#fffdf8;
@@ -126,16 +132,23 @@ def _elements(flowsheet: Flowsheet, solution: Solution) -> str:
 
 def _energy(flowsheet: Flowsheet, solution: Solution) -> str:
     rows = [
-        f"<tr><td>{escape(r.name)}</td>{_cell(r.inflow)}{_cell(r.duty)}{_cell(r.outflow)}"
-        f"<td>{r.relative_error:.1e}</td></tr>"
+        f"<tr><td>{escape(r.name)}</td>{_cell(r.inflow)}{_cell(r.duty)}{_cell(r.power)}"
+        f"{_cell(r.outflow)}<td>{r.relative_error:.1e}</td></tr>"
         for r in energy_balance(flowsheet, solution)
     ]
     if not rows:
         return ""
-    head = ["Equipo", "Entra (kW)", "Calor agregado (kW)", "Sale (kW)", "Error relativo"]
+    head = [
+        "Equipo",
+        "Entra (kW)",
+        "Calor agregado (kW)",
+        "Electricidad (kW)",
+        "Sale (kW)",
+        "Error relativo",
+    ]
     note = (
         '<p class="nota">Entalpías absolutas: incluyen la de formación a 25 °C, por eso son '
-        "negativas. Lo que importa es la diferencia: entra + calor agregado = sale.</p>"
+        "negativas. Lo que importa es la diferencia: entra + calor + electricidad = sale.</p>"
     )
     return "<h2>Balance de energía</h2>" + _table(head, rows) + note
 
@@ -152,6 +165,24 @@ def _equilibrium(flowsheet: Flowsheet, solution: Solution) -> str:
             f"<h2>Equilibrio · {escape(name)}</h2><p>pH <b>{_num(eq.ph, 3)}</b> · fuerza iónica "
             f"<b>{_num(eq.ionic_strength, 3)} mol/kg</b></p>{warnings}"
             + _table(["Mineral", "Cantidad (mol/h)", "Índice de saturación"], rows)
+        )
+    return "".join(parts)
+
+
+def _electrowinning(flowsheet: Flowsheet, solution: Solution) -> str:
+    parts = []
+    for name, ew in ew_report(flowsheet, solution):
+        rows = [
+            f"<tr><td>{escape(label)}</td>{_cell(volts, 3)}</tr>"
+            for label, volts in ew.components.items()
+        ]
+        warnings = "".join(f'<p class="aviso">{escape(w)}</p>' for w in ew.warnings)
+        parts.append(
+            f"<h2>Electroobtención · {escape(name)}</h2><p>{_num(ew.current_a / 1000, 1)} kA · "
+            f"cátodos <b>{_num(ew.copper_kg_h, 2)} kg/h</b> · celda <b>{_num(ew.cell_voltage, 3)} V"
+            f"</b> · <b>{_num(ew.specific_energy_kwh_t, 0)} kWh/t</b> · electrolito agotado "
+            f"{_num(ew.spent_cu_g_l, 2)} g/L de Cu</p>{warnings}"
+            + (_table(["Componente del voltaje", "V"], rows) if rows else "")
         )
     return "".join(parts)
 
@@ -219,7 +250,8 @@ def html_report(
 <h2>Diagrama de flujo</h2><div class="lamina">{flowsheet_svg(flowsheet)}</div>
 <h2>Corrientes</h2>{_streams(flowsheet, solution)}
 <h2>Balance por elemento</h2>{_elements(flowsheet, solution)}
-{_energy(flowsheet, solution)}{_equilibrium(flowsheet, solution)}{control}{cost_section}
+{_energy(flowsheet, solution)}{_equilibrium(flowsheet, solution)}
+{_electrowinning(flowsheet, solution)}{control}{cost_section}
 <footer>Simulador implementado desde la literatura. Estado estacionario; los límites de cada
 modelo están en la documentación del proyecto.</footer>
 </main></body></html>
