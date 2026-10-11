@@ -135,6 +135,9 @@ El pH del PLS con Fuentes se calcula sin Mg, porque su base no lo trae, y se le 
 
 **Hallazgos:**
 - **Dos modelos coherentes coinciden en el pH del PLS (1,74 y 1,81) y ninguno llega al 1,46 medido.** La diferencia no parece venir del modelo de actividad. Lo más probable es que venga de la referencia: un pH de electrodo a fuerza iónica ~1 no es directamente el pH termodinámico. También podrían influir especies que no se modelan, como Al y Fe³⁺. Por eso, en la extracción se mantiene la calibración con el pH medido.
+- **Prueba diferencial con el PLS 2 de Mitshabu.** Es el mismo PLS con 0,030 mol/L de NaOH, y su pH medido sube de 1,46 a 1,84. Con `pitzer_cu.dat`, Mg y Ca reales y la acidez titulada del PLS 2 (1,95 g/L), el modelo da 1,79 y 2,13: **sube +0,33 contra +0,38 medido**. Con la acidez que sale del NaOH agregado (2,43 g/L), la subida es +0,23. El propio artículo no es consistente: su acidez titulada no cuadra con el NaOH que dice haber agregado.
+
+  El modelo, entonces, amortigua el ácido casi como la solución real, y su diferencia con el pH medido es casi constante: +0,33 y +0,29. Un error que no cambia con la composición apunta a la escala del pH medido y no al modelo. Son dos puntos: es una evidencia fuerte, no una prueba. Este análisis se hizo después de ver los resultados y no tiene tolerancia fijada.
 - **En el despojo exigente, Fuentes da menos actividad del H⁺** que `pitzer_cu.dat` (pH −0,06 contra −0,37 con 199 g/L de ácido) y despoja de menos. Para el despojo se recomienda `pitzer_cu.dat`, que reproduce a Isocalc.
 
 ## Hallazgos y límites
