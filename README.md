@@ -39,7 +39,7 @@ Planta: Lixiviación de óxidos de cobre
 
 Además, 3 plantas reales publicadas: la producción de Constancia (Hudbay), el ácido de lixiviación de Marimaca y los cátodos del plan minero de Puquios. Las tolerancias se fijaron antes de correr. Detalle y hallazgos en [docs/VALIDACION_PLANTAS_REALES.md](docs/VALIDACION_PLANTAS_REALES.md).
 
-251 pruebas (más 17 fallos esperados: redondeos de la fuente, los límites de los modelos de actividad y el del vapor ideal), cobertura del 98 % y ruff limpio:
+265 pruebas (más 18 fallos esperados: redondeos de la fuente, los límites de los modelos de actividad y el del vapor ideal), cobertura del 98 % y ruff limpio:
 
 ```bash
 python -m pytest --cov=procesos
@@ -77,7 +77,7 @@ python -m procesos resolver ejemplos/lixiviacion_equilibrio.yaml
 
 Los equipos `extraccion_solventes` y `despojo` calculan, etapa por etapa y en contracorriente, cuánto cobre pasa al orgánico. Usan el equilibrio Cu²⁺ + 2 RH ⇌ CuR₂ + 2 H⁺ del LIX 984N (Devi y Nayak 2014), con eficiencia de Murphree y el ácido que se libera. El orgánico puede circular en circuito cerrado entre la extracción y el despojo.
 - **Extracción validada:** reproduce los experimentos de un contacto y de 2 etapas a contracorriente de Devi con un desvío de 2,3 % o menos. Con el orgánico de Isocalc recupera 89,4 % contra 92,8 %.
-- **Despojo no validado:** con ácido concentrado el H⁺ ideal despoja de menos, y el circuito completo recupera 70 % en vez de 93 %. Está documentado como fallo esperado.
+- **Despojo:** con ácido concentrado hace falta la actividad del H⁺ (`acidez: pitzer`, con PHREEQC). Con ella, el orgánico despojado y el electrolito cuadran con Devi y con Isocalc, y el circuito recupera 90,1 % contra 92,8 %. Con el H⁺ ideal se queda en 70 %, documentado como fallo esperado.
 
 Ver [docs/sx.md](docs/sx.md).
 

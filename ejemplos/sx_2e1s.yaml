@@ -2,8 +2,9 @@
 # Condiciones del caso simulado con Isocalc por Mitshabu et al. (SAIMM Copper-Cobalt 2023): PLS de
 # 7,02 g/L de Cu a pH 1,46 con 30 g/L de sulfato, 300 m3/h; reactivo al 21 %v/v; electrolito pobre
 # de 33,67 g/L de Cu y 199,3 g/L de ácido. Ver docs/sx.md.
-# Límite conocido: con ácido concentrado el modelo trata el H+ como ideal y despoja de menos, así
-# que el orgánico vuelve más cargado y la recuperación sale baja (70 % frente a 93 % de Isocalc).
+# La extracción usa la acidez ideal calibrada con el pH medido del PLS; el despojo, la actividad
+# del H+ de Pitzer (PHREEQC, pitzer_cu.dat; requiere pip install -e ".[equilibrio]"). Con el H+
+# ideal el despojo se queda corto y el circuito recupera 70 %; así, 90 % (Isocalc: 92,8 %).
 nombre: Extracción por solventes 2E-1S con orgánico en circuito cerrado
 especies:
   - {nombre: H2O, fase: l}
@@ -36,3 +37,4 @@ equipos:
     etapas: 1
     eficiencia: 0.95
     densidad_acuosa: 1.2
+    acidez: pitzer             # actividad del H+ en el electrolito concentrado

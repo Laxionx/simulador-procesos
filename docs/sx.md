@@ -13,6 +13,7 @@ El equipo calcula cuánto cobre pasa del PLS al orgánico, y del orgánico al el
   densidad_acuosa: 1.0       # kg/L
   densidad_organica: 0.81
   kex: 5.05                  # por defecto, el del LIX 984N
+  acidez: pitzer             # opcional: actividad del H⁺ con PHREEQC (recomendado en el despojo)
 ```
 
 Ejemplo completo, con el orgánico en circuito cerrado entre la extracción y el despojo: [`ejemplos/sx_2e1s.yaml`](../ejemplos/sx_2e1s.yaml).
@@ -36,6 +37,7 @@ y* es el cobre orgánico en equilibrio con la acuosa que sale de la etapa.
 **H⁺.** Cada Cu extraído libera 2 H⁺, que se reparten con el sulfato según H⁺ + SO₄²⁻ ⇌ HSO₄⁻:
 - **ideal** (pKa₂ = 1,99), por defecto;
 - **calibrada con el pH medido de la alimentación**, si se da `ph_alimentacion`. Con 30 g/L de sulfato, la asociación ideal da pH 2,48 a un PLS cuyo pH medido es 1,46: la diferencia son las actividades. El pH medido es un dato de entrada, no un resultado.
+- **actividad de Pitzer**, con `acidez: pitzer`. PHREEQC (`pitzer_cu.dat`) da el pH de cada composición acuosa del perfil; el H⁺ sale del balance de carga. Para no llamar a PHREEQC en cada iteración, el pH se tabula en 41 valores de Cu, entre 0 y el máximo posible, y se interpola. Es lo coherente con Kex, porque Devi lo definió con el pH medido, que es actividad. Requiere `pip install -e ".[equilibrio]"`, y la base debe traer todos los elementos de la acuosa: `pitzer.dat` no trae Ni ni Al.
 
 **En la planta**, el equipo aplica `CuSO4 + 2 RH -> CuR2 + H2SO4` con el avance que da el equilibrio. Por eso cierra por elemento.
 - El orgánico se describe con especies de fase `org` y fórmula real: RH = 5-nonilsalicilaldoxima (C₁₆H₂₅NO₂), CuR₂ y un diluyente (C₁₂H₂₆).
@@ -86,18 +88,50 @@ Para comprobar que las pruebas pueden fallar, se metieron 7 errores a propósito
 - Kex de Devi en su unidad (2,90);
 - ácido que no se libera en la salida.
 
+## Acidez de Pitzer: el despojo
+
+Las tolerancias se fijaron antes de correr (`tests/test_sx_acidez.py`) y son las mismas de arriba.
+
+| Prueba | Referencia | Resultado |
+|---|---|---|
+| pH del PLS de Mitshabu, sin la SX | Medido: 1,46 (±0,15) | **1,81** ❌ |
+| Devi, un contacto, 10 a 25 %v/v | Figura 3 (±15 %) | −2,3 % a +0,6 % ✅ |
+| Devi, 2 etapas | Tabla IV | 8,43 g/L; 0,031 g/L; pH 1,00 ✅ |
+| Devi, despojo en 3 etapas: electrolito | Tabla V: 25,1 g/L | 25,20 ✅ |
+| Devi, despojo: orgánico despojado | Tabla V: 0,002 g/L (≤ 0,05) | < 0,0001 ✅ |
+| Circuito Isocalc, todo con Pitzer: recuperación | 92,83 % (±5 puntos) | 96,3 % ✅ |
+| Circuito Isocalc, todo con Pitzer: transferencia neta | 0,26 (±20 %) | 0,271 ✅ |
+| Circuito Isocalc, todo con Pitzer: orgánico despojado | Isocalc: 3,12 g/L (informativo) | 3,14 |
+| Extracción calibrada con el pH medido y despojo con Pitzer (*) | Mismas tolerancias | 90,1 %; 0,253; 76,2 % de la carga máxima ✅ |
+| Tabla de pH en el Cu de la alimentación | pH directo de PHREEQC | 1e-9 ✅ |
+
+(*) Combinación elegida **después** de ver las cifras. No es una validación ciega.
+
+**Lectura:**
+- Pitzer arregla el despojo. Con 199 a 270 g/L de ácido, el orgánico despojado y el electrolito cuadran con Devi y con Isocalc.
+- En la extracción acierta por exceso. Da al PLS un pH 0,35 más alto que el medido, y con menos ácido extrae más: 96,3 % frente a 92,8 %, dentro de la tolerancia pero sesgado.
+- La combinación mejor fundada es la del ejemplo: extracción calibrada con el pH medido y despojo con Pitzer.
+
+Para comprobar que las pruebas pueden fallar, se metieron 4 errores a propósito en el modo Pitzer y todos se detectaron:
+- modo ignorado;
+- tabla sin el rango del despojo;
+- pH fijo a lo largo de las etapas;
+- Cu en mol/L en vez de mol/kg de agua.
+
+La última sobrevivía al principio, porque con densidades cercanas a 1 apenas mueve el pH. La detecta la verificación de la tabla contra el pH directo, que se agregó por eso.
+
 ## Hallazgos y límites
 
-- **La extracción se valida; el despojo no.** Con ácido concentrado (199 a 270 g/L), el modelo trata el H⁺ como ideal, y su actividad real es mucho mayor. Por eso despoja de menos:
+- **Con el H⁺ ideal el despojo no cuadra.** En ácido concentrado, la actividad del H⁺ es mucho mayor que su concentración:
   - en Devi deja 0,119 g/L en el orgánico, contra 0,002 medido;
-  - en el caso Isocalc deja 5,0 g/L, contra 3,1.
+  - en el caso Isocalc deja 5,0 g/L, contra 3,1, y el circuito recupera 70 %.
 
-  Como el orgánico vuelve más cargado, el circuito completo recupera 70 % en vez de 93 %. Son 3 fallos esperados y **estrictos**. No se ajustó nada para tapar la diferencia. El siguiente paso sería la actividad del H⁺ en ácido concentrado, con Pitzer, pero `pitzer_cu.dat` ya mostró que el cobre con ácido no se transfiere bien (ver `docs/equilibrio.md`).
-- **Calibrar con el pH medido es decisivo.** Sin calibrar, el modelo ideal daría 99,5 % de recuperación en la extracción del caso Isocalc; calibrado, 89,4 %.
+  Esas pruebas siguen como fallos esperados y **estrictos**, para documentar el modo ideal. La solución es `acidez: pitzer` en el despojo (sección anterior).
+- **Calibrar con el pH medido es decisivo en la extracción.** Sin calibrar, el modelo ideal daría 99,5 % de recuperación en el caso Isocalc; calibrado, 89,4 %. Pitzer, sin calibrar, da 96,3 %, porque su pH del PLS sale 0,35 más alto que el medido.
 - No modela:
   - hierro ni manganeso, ni su coextracción;
   - arrastres de una fase en la otra;
   - la cinética ni la dinámica de los mezcladores;
-  - la temperatura: Kex es de 30 °C;
+  - la temperatura: Kex es de 30 °C y Pitzer se evalúa a 25 °C;
   - la electroobtención.
 - La densidad de cada fase es constante y la da el usuario.

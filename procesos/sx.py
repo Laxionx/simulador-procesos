@@ -8,7 +8,9 @@ Para cada etapa i (la acuosa entra por la 1 y sale por la N; la orgánica, al re
 - eficiencia: y[i] = y[i+1] + E[i]·(y*(x[i]) - y[i+1])   (Murphree, en la orgánica)
 donde y* es el Cu orgánico en equilibrio con la acuosa que sale de la etapa. El H⁺ libre sale
 del ácido total (el inicial más 2 H⁺ por Cu extraído) y de la asociación H⁺ + SO₄²⁻ ⇌ HSO₄⁻:
-ideal (pKa₂ = 1,99) o calibrada con el pH medido de la alimentación acuosa.
+ideal (pKa₂ = 1,99) o calibrada con el pH medido de la alimentación acuosa. Con
+``acidity="pitzer"`` el H⁺ es la ACTIVIDAD que da PHREEQC con pitzer_cu.dat para cada composición
+acuosa del perfil (Kex se definió con el pH medido, que es actividad).
 
 En la planta el equipo aplica CuSO4 + 2 RH -> CuR2 + H2SO4 con el avance que da el equilibrio,
 así que cierra por elemento. Extracción y despojo son el mismo equipo: el sentido lo decide el
@@ -18,10 +20,13 @@ equilibrio. Ver docs/sx.md.
 from __future__ import annotations
 
 import math
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, replace
+from functools import cache
+from pathlib import Path
 
 import numpy as np
+from scipy.interpolate import PchipInterpolator
 from scipy.optimize import least_squares, root
 
 from .species import Catalog
@@ -32,6 +37,9 @@ from .stream import Stream
 KEX_LIX984N = 5.05
 PKA2_HSO4 = 1.99
 WATER = "H2O"
+ACIDITIES = ("ideal", "pitzer")
+PITZER_DATABASE = "pitzer_cu.dat"
+PITZER_GRID = 41  # puntos de la tabla de pH en función del Cu acuoso
 
 
 class SXError(RuntimeError):
@@ -72,6 +80,69 @@ class SXResult:
 _CU = 63.546
 
 
+@cache
+def _database_elements(path: str) -> frozenset[str]:
+    """Elementos de los bloques SOLUTION_MASTER_SPECIES de una base de PHREEQC."""
+    elements, inside = set(), False
+    for line in Path(path).read_text(encoding="utf-8", errors="replace").splitlines():
+        token = line.split("#")[0].strip()
+        if not token:
+            continue
+        if line[0].isalpha() and token.split()[0].isupper() and "_" in token.split()[0]:
+            inside = token.split()[0] == "SOLUTION_MASTER_SPECIES"
+            continue
+        if inside:
+            elements.add(token.split()[0].split("(")[0])
+    return frozenset(elements)
+
+
+def _molalities(aqueous: Stream, catalog: Catalog) -> dict[str, float]:
+    """mol/kg de agua de cada elemento (sin H ni O) de las especies acuosas."""
+    totals: dict[str, float] = {}
+    for name, flow in aqueous.flows.items():
+        sp = catalog[name]
+        if sp.phase != "aq" or flow <= 0:
+            continue
+        for e, c in sp.composition.items():
+            if e not in ("H", "O"):
+                totals[e] = totals.get(e, 0.0) + flow * 1000.0 / sp.molar_mass * c
+    return {e: v / aqueous.flow(WATER) for e, v in totals.items()}
+
+
+@cache
+def _pitzer_ph_table(database: str, solutions: tuple[tuple[tuple[str, float], ...], ...]):
+    from .equilibrium import MASTER, PhreeqcError, _engine
+
+    lines = ["SELECTED_OUTPUT", "  -reset false", "  -pH true"]
+    for i, totals in enumerate(solutions, 1):
+        lines += [f"SOLUTION {i}", "  temp 25", "  pH 7 charge", "  units mol/kgw"]
+        lines += [f"  {MASTER.get(e, e)} {m:.15g}" for e, m in totals if m > 0]
+    lines.append("END")
+    engine = _engine(database)
+    try:
+        engine.run_string("\n".join(lines))
+    except Exception as error:  # noqa: BLE001 - phreeqpy lanza Exception genérica
+        raise PhreeqcError(f"PHREEQC falló al calcular el pH: {error}") from error
+    table = engine.get_selected_output_array()
+    return tuple(float(row[0]) for row in table[1:])
+
+
+def pitzer_ph(
+    aqueous: Stream, catalog: Catalog, database: str = PITZER_DATABASE,
+    copper: Mapping[str, float] | None = None,
+) -> float:  # fmt: skip
+    """pH (actividad del H⁺) de una corriente acuosa según PHREEQC; el H⁺ sale del balance de
+    carga, así que el ácido libre queda representado por el sulfato que no balancean los metales."""
+    from .equilibrium import database_path
+
+    path = database_path(database)
+    totals = _molalities(aqueous, catalog) | dict(copper or {})
+    missing = sorted(set(totals) - _database_elements(path))
+    if missing:
+        raise ValueError(f"La base {Path(path).name} no trae {missing}")
+    return _pitzer_ph_table(path, (tuple(sorted(totals.items())),))[0]
+
+
 def _free_h(total_h: float, total_s: float, ka: float) -> float:
     """[H⁺] libre con H⁺ + SO₄²⁻ ⇌ HSO₄⁻ (ka = constante de disociación del HSO₄⁻)."""
     total_h = max(total_h, 1e-12)
@@ -94,6 +165,8 @@ class SolventExtraction:
     feed_ph: float | None = None
     pka2: float = PKA2_HSO4
     distribution: float | None = None  # isoterma lineal y* = m·x (verificación)
+    acidity: str = "ideal"  # "ideal" (o calibrada con feed_ph) o "pitzer"
+    database: str = PITZER_DATABASE
     copper: str = "CuSO4"
     acid: str = "H2SO4"
     extractant: str = "RH"
@@ -111,6 +184,10 @@ class SolventExtraction:
         object.__setattr__(self, "efficiency", tuple(float(e) for e in eff))
         if min(self.kex, self.density_aq, self.density_org) <= 0:
             raise ValueError(f"{self.name}: Kex y densidades deben ser positivos")
+        if self.acidity not in ACIDITIES:
+            raise ValueError(f"{self.name}: acidez {self.acidity!r}; use una de {ACIDITIES}")
+        if self.acidity == "pitzer" and self.feed_ph is not None:
+            raise ValueError(f"{self.name}: el pH medido solo calibra la acidez ideal")
 
     # ---------------------------------------------------------------- entrada
     def _phases(self, inputs: Sequence[Stream], catalog: Catalog) -> tuple[Stream, Stream]:
@@ -163,6 +240,9 @@ class SolventExtraction:
         def acid(x: float) -> float:
             return _free_h(h0 + 2.0 * (x0 - x), s_total, ka)
 
+        if self.acidity == "pitzer":
+            acid = self._pitzer_acid(aqueous, catalog, a, x0 + hr_total / 2.0 * r)
+
         def y_star(x: float) -> float:
             x = max(x, 0.0)
             if self.distribution is not None:
@@ -197,6 +277,23 @@ class SolventExtraction:
             a,
             o,
         )
+
+    def _pitzer_acid(self, aqueous: Stream, catalog: Catalog, a: float, top: float):
+        """Actividad del H⁺ en función del Cu acuoso (mol/L), tabulada con PHREEQC entre 0 y el
+        máximo posible (todo el cobre del orgánico en la acuosa) e interpolada."""
+        from .equilibrium import database_path
+
+        path = database_path(self.database)
+        totals = _molalities(aqueous, catalog)
+        missing = sorted(set(totals) - _database_elements(path))
+        if missing:
+            raise ValueError(f"{self.name}: la base {Path(path).name} no trae {missing}")
+        grid = np.linspace(0.0, max(top, 1e-9), PITZER_GRID)
+        to_molal = a / aqueous.flow(WATER)  # (mol/L)·(L/h)/(kg/h de agua) = mol/kg
+        rest = tuple(sorted((e, m) for e, m in totals.items() if e != "Cu"))
+        solutions = tuple(tuple(sorted(rest + (("Cu", float(x) * to_molal),))) for x in grid)
+        ph = PchipInterpolator(grid, np.asarray(_pitzer_ph_table(path, solutions)))
+        return lambda x: 10.0 ** (-float(ph(min(max(x, 0.0), grid[-1]))))
 
     def _ka(self, h0: float, s_total: float) -> float:
         if self.feed_ph is None:

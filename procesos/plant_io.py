@@ -139,6 +139,7 @@ def _unit(data: Any, index: int) -> Unit:
                 acid=str(data.get("acido", "H2SO4")),
                 extractant=str(data.get("extractante", "RH")),
                 complex=str(data.get("complejo", "CuR2")),
+                acidity=str(data.get("acidez", "ideal")),
             )
         if kind == "calentador":
             temperature, duty = data.get("temperatura"), data.get("calor_kw")
