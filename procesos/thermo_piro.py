@@ -11,6 +11,8 @@ sensible a alta temperatura sale de:
   sólido (α, β, γ) y líquido, en kcal/mol; los saltos entre tramos reproducen las transiciones
   publicadas (0,865; 0,280 y 3,070 de fusión).
 - USGS Bulletin 2131, ecuaciones de Cp: ZnS (esfalerita, 298-1.300 K; extrapolada a 1.600 K) y ZnO.
+- Tablas NIST-JANAF (janaf.nist.gov, columna H-H298) interpoladas: Cu sólido y líquido (Cu-001)
+  y magnetita (Fe-032), para el convertidor (fase 4b).
 
 Escoria fundida: el FeO y el SiO2 bajo su punto de fusión se tratan como líquidos subenfriados
 (Shomate del sólido más el calor de fusión de JANAF). Los minerales de la alimentación entran a
@@ -19,7 +21,14 @@ Escoria fundida: el FeO y el SiO2 bajo su punto de fusión se tratan como líqui
 
 from __future__ import annotations
 
-from .thermo import ConstantCp, EnthalpyPolynomial, MaierKelley, Shomate, ThermoRecord
+from .thermo import (
+    ConstantCp,
+    EnthalpyPolynomial,
+    MaierKelley,
+    Shomate,
+    TabulatedEnthalpy,
+    ThermoRecord,
+)
 
 NIST_USGS = "ΔfH de USGS B2131; calor sensible de NIST-JANAF (Chase 1998)"
 USBM = "ΔfH de USGS B2131; calor sensible de USBM RI 8305 (Ferrante et al. 1978)"
@@ -80,6 +89,27 @@ _SO2 = (
 FUSION_FEO = shomate_absolute(FEO_LIQUID, 1650.0) - shomate_absolute(FEO_SOLID, 1650.0)
 FUSION_SIO2 = shomate_absolute(_SIO2_L, 1996.0) - shomate_absolute(_SIO2_S[1], 1996.0)
 
+# JANAF, H-H298 en kJ/mol. Cu-001: el sólido llega a 1.358 K y el líquido parte de ahí con el
+# calor de fusión (13,138 kJ/mol). Fe-032: la transición λ de la magnetita (900 K) es continua.
+_CU_JANAF = (
+    TabulatedEnthalpy(
+        (298.15, 300, 400, 500, 600, 700, 800, 900, 1000, 1100, 1200, 1300, 1358),
+        (0.0, 0.045, 2.539, 5.105, 7.725, 10.399, 13.123, 15.899, 18.733, 21.638, 24.633,
+         27.762, 29.660),
+    ),
+    TabulatedEnthalpy(
+        (1358, 1400, 1500, 1600, 1700, 1800, 1900, 2000),
+        (42.798, 44.177, 47.462, 50.746, 54.031, 57.315, 60.600, 63.884),
+    ),
+)  # fmt: skip
+_FE3O4_JANAF = TabulatedEnthalpy(
+    (298.15, 300, 400, 500, 600, 700, 800, 900, 1000, 1100, 1200, 1300, 1400, 1500, 1600, 1700,
+     1800),
+    (0.0, 0.273, 16.240, 34.424, 54.671, 76.934, 101.214, 127.510, 147.594, 167.677, 187.760,
+     207.843, 227.927, 248.010, 268.093, 288.176, 308.259),
+)  # fmt: skip
+JANAF_TABLE = "ΔfH de USGS B2131; calor sensible de la tabla NIST-JANAF interpolada"
+
 # RI 8305, h - h298 en kcal/mol: α, β, γ y líquido.
 _CU2S = (
     EnthalpyPolynomial(298.15, 376.0, 5.24e-3, 17.72e-6, -2.29e2, -2.369),
@@ -111,6 +141,8 @@ PIRO = {
     ("ZnO", "s"): ThermoRecord(
         -350.46, (MaierKelley(298.15, 1800.0, 43.50, 7.658e-3, -7.573e5, 54.56),), USGS_CP
     ),
+    ("Cu", "l"): ThermoRecord(0.0, _CU_JANAF, JANAF_TABLE),
+    ("Fe3O4", "s"): ThermoRecord(-1115.7, (_FE3O4_JANAF,), JANAF_TABLE),
     ("SO2", "g"): ThermoRecord(
         -296.8422, _shomate(-296.8422, *_SO2), "NIST WebBook, Shomate (Chase 1998)"
     ),
@@ -122,7 +154,6 @@ PIRO = {
     ("CuS", "s"): _at25(-54.6),
     ("FeS", "s"): _at25(-101.0),
     ("Fe2SiO4", "s"): _at25(-1478.2),
-    ("Fe3O4", "s"): _at25(-1115.7),
     ("Fe2O3", "s"): _at25(-826.2),
     ("CuSO4", "s"): _at25(-771.4),
     ("ZnSO4", "s"): _at25(-980.1),

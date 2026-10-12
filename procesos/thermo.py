@@ -123,7 +123,32 @@ class EnthalpyPolynomial:
         return (self.a * t + self.b * t**2 + self.c / t + self.d) * 4.184
 
 
-CpModel = Shomate | MaierKelley | ConstantCp | EnthalpyPolynomial
+@dataclass(frozen=True)
+class TabulatedEnthalpy:
+    """h - h298 tabulada (kJ/mol) contra T (K), interpolada linealmente, p. ej. la columna
+    H-H(Tr) de una tabla NIST-JANAF. Un tramo no debe cruzar una transición de fase."""
+
+    temps: tuple[float, ...]
+    dh_kj: tuple[float, ...]
+
+    @property
+    def tmin(self) -> float:
+        return self.temps[0]
+
+    @property
+    def tmax(self) -> float:
+        return self.temps[-1]
+
+    def dh(self, temp_k: float) -> float:
+        return float(np.interp(temp_k, self.temps, self.dh_kj))
+
+    def cp(self, temp_k: float) -> float:
+        i = min(max(int(np.searchsorted(self.temps, temp_k)), 1), len(self.temps) - 1)
+        t0, t1 = self.temps[i - 1], self.temps[i]
+        return (self.dh_kj[i] - self.dh_kj[i - 1]) / (t1 - t0) * 1000.0
+
+
+CpModel = Shomate | MaierKelley | ConstantCp | EnthalpyPolynomial | TabulatedEnthalpy
 
 
 @dataclass(frozen=True)

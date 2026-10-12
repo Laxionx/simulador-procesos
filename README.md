@@ -2,7 +2,7 @@
 
 Simulador de procesos metalúrgicos implementado **desde la literatura**: balance de masa y de calor de plantas con reacciones químicas, equilibrio acuoso, reciclos y lazos de control. Es independiente de cualquier software comercial.
 
-**Fases 1 a 4 (esta versión):** balance de masa y de calor en estado estacionario, equilibrio químico acuoso con PHREEQC, extracción por solventes y electroobtención de cobre, molienda conectada a simulador-conminucion, flotación cinética, fusión flash de cobre (balance de masa y de calor del horno), y reporte HTML con diagrama de flujo y costo operativo.
+**Fases 1 a 4 (esta versión):** balance de masa y de calor en estado estacionario, equilibrio químico acuoso con PHREEQC, extracción por solventes y electroobtención de cobre, molienda conectada a simulador-conminucion, flotación cinética, fusión flash y conversión Peirce-Smith de cobre (balance de masa y de calor), horno de ánodos, y reporte HTML con diagrama de flujo y costo operativo.
 
 ```bash
 pip install -e .
@@ -39,7 +39,7 @@ Planta: Lixiviación de óxidos de cobre
 
 Además, 3 plantas reales publicadas: la producción de Constancia (Hudbay), el ácido de lixiviación de Marimaca y los cátodos del plan minero de Puquios. Las tolerancias se fijaron antes de correr. Detalle y hallazgos en [docs/VALIDACION_PLANTAS_REALES.md](docs/VALIDACION_PLANTAS_REALES.md).
 
-400 pruebas (más 29 fallos esperados: redondeos de la fuente, los límites de los modelos de actividad, la conductividad del electrolito, el del vapor ideal, la discrepancia JANAF-USGS del FeO y lo que el horno flash no alcanza), cobertura del 97 % y ruff limpio:
+428 pruebas (más 32 fallos esperados: redondeos de la fuente, los límites de los modelos de actividad, la conductividad del electrolito, el del vapor ideal, la discrepancia JANAF-USGS del FeO, lo que el horno flash no alcanza y la carga de convertidor publicada que no cierra), cobertura del 97 % y ruff limpio:
 
 ```bash
 python -m pytest --cov=procesos
@@ -128,6 +128,17 @@ Ver [docs/molienda.md](docs/molienda.md).
 
 Ver [docs/fusion.md](docs/fusion.md).
 
+## Conversión Peirce-Smith y horno de ánodos (fase 4b)
+
+`procesos.conversion` hace el balance de masa y de calor del convertidor por etapa (soplado a escoria y a cobre). Da el aire, la escoria, el metal blanco, el blíster, el SO2 y la carga fría que alcanza a fundir el calor sobrante. `procesos.anodos` hace la oxidación y la reducción del blíster; no está validado contra planta porque no hay datos medidos abiertos.
+- Contra cargas de planta publicadas en tesis abiertas (Rönnskär, Lennartsson 2013; Flin Flon, Kyllo 1995), 4 de 7 comparaciones quedan dentro de tolerancia. Pasa el corte por poco:
+  - Flin Flon, con análisis completos, da la escoria a −13 a +10 %;
+  - en Rönnskär, la carga publicada no cierra ni en cobre (−13 %) ni en calor, y la mata viene sin su Fe ni su S;
+  - el modelo de la propia tesis (FactSage) da los mismos números que este.
+- Módulo de cálculo, no equipo del YAML. `python ejemplos/conversion_ilo.py` lleva 100 t de mata con parámetros de Ilo hasta ánodo (ilustrativo).
+
+Ver [docs/conversion.md](docs/conversion.md).
+
 ## Reporte HTML y costo operativo (fase 4)
 
 ```bash
@@ -149,7 +160,8 @@ Ver [docs/reporte-y-costos.md](docs/reporte-y-costos.md).
 | 3 ✅ | Equilibrio químico acuoso con PHREEQC: minteq.v4 hasta una fuerza iónica de ~0,5 mol/kg; Pitzer para soluciones concentradas sin cobre ácido |
 | 4 ✅ | Reporte HTML con diagrama de flujo y costo operativo; sin costo de capital (no hay correlaciones públicas validadas) |
 | 4a ✅ | Pirometalurgia: fusión flash de cobre, balance de masa y de calor (datos públicos USGS, JANAF, USBM) |
-| 4b-4d | Pendientes: conversión y horno de ánodos, electrorrefinación, fundición de estaño |
+| 4b ✅ | Conversión Peirce-Smith y horno de ánodos (este último sin validar contra planta) |
+| 4c-4d | Pendientes: electrorrefinación, fundición de estaño |
 
 ## Límites de esta versión
 
