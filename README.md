@@ -39,7 +39,7 @@ Planta: Lixiviación de óxidos de cobre
 
 Además, 3 plantas reales publicadas: la producción de Constancia (Hudbay), el ácido de lixiviación de Marimaca y los cátodos del plan minero de Puquios. Las tolerancias se fijaron antes de correr. Detalle y hallazgos en [docs/VALIDACION_PLANTAS_REALES.md](docs/VALIDACION_PLANTAS_REALES.md).
 
-479 pruebas (más 41 fallos esperados: redondeos de la fuente, los límites de los modelos de actividad, la conductividad del electrolito, el del vapor ideal, la discrepancia JANAF-USGS del FeO, lo que el horno flash no alcanza, la carga de convertidor publicada que no cierra y el voltaje de refinación frente al compendio IsaKidd), cobertura del 97 % y ruff limpio:
+495 pruebas (más 50 fallos esperados: redondeos de la fuente, los límites de los modelos de actividad, la conductividad del electrolito, el del vapor ideal, la discrepancia JANAF-USGS del FeO, lo que el horno flash no alcanza, la carga de convertidor publicada que no cierra, el voltaje de refinación frente al compendio IsaKidd y la flotación de laboratorio a piloto), cobertura del 97 % y ruff limpio:
 
 ```bash
 python -m pytest --cov=procesos
@@ -103,7 +103,7 @@ python -m procesos resolver ejemplos/sx_ew_circuito.yaml
 
 El equipo `flotacion` reemplaza la recuperación fija por cinética de primer orden por especie (constante única o distribución rectangular de Klimpel) en un banco de celdas en serie. `python -m procesos ajustar` ajusta la cinética a una prueba batch o al perfil de un banco.
 - Validado con los bancos rougher industriales de Los Pelambres (Vinnett et al. 2022, acceso abierto). Con sus parámetros reproduce sus recuperaciones modeladas a 0,4 puntos o menos. Ajustando sus recuperaciones medidas obtiene sus parámetros: R∞ a 0,1 puntos y k a 1,3 % o menos.
-- **No validado:** la predicción de laboratorio a planta. En cuatro plantas chilenas, el factor de escalamiento fue de 0,8 a 15,7 (Vallejos 2023), así que se calibra con la planta.
+- **De laboratorio a piloto** (Minerals 16(7):726, 2026, con cinética de Kelsall de dos componentes): predice la ley de Cu del concentrado (+4 %), pero no la pirita ni la ganga. Quedan fuera 5 de 9 comparaciones y no pasa el corte. La simulación de los propios autores no se puede reproducir con lo publicado. El factor de escalamiento se calibra con la planta (Vallejos 2023: de 0,8 a 15,7).
 
 Ver [docs/flotacion.md](docs/flotacion.md).
 

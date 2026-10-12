@@ -7,7 +7,8 @@ de recuperación de un banco.
 
 ## Modelo
 
-Distribución de constantes f(k): `primer_orden` (una sola k; García-Zúñiga 1935) o `rectangular`
+Distribución de constantes f(k): `primer_orden` (una sola k; García-Zúñiga 1935), `kelsall` (dos
+componentes, ver abajo) o `rectangular`
 (k uniforme entre 0 y kmax; Klimpel 1980, k media = kmax/2).
 
 | | Batch (t min) | N celdas de mezcla perfecta (τ min cada una) |
@@ -64,19 +65,65 @@ El ajuste reproduce el de los autores con sus propios datos (RMSE de 0,7 a 1,3 p
 lo medido). Las 11 mutaciones del código (fórmulas, k media, escalamiento, aire, densidad,
 masa) hacen fallar las pruebas.
 
-## Lo que NO se validó: de laboratorio a planta
+## De laboratorio a piloto: Minerals 16(7):726 (2026)
 
-El brief pedía predecir con la cinética de laboratorio un resultado continuo o piloto medido. No
-se pudo:
-- **El candidato,** *Minerals* 16(7):726 (2026), que compara laboratorio con piloto, es de acceso
-  abierto pero MDPI bloquea la descarga automática.
-- **La literatura abierta muestra que ese salto no es predecible sin calibrar.** En cuatro
-  plantas chilenas de cobre (Vallejos 2023, *Physicochem. Probl. Miner. Process.* 59(5),
-  177609), el factor de escalamiento entre la prueba batch y el banco rougher fue de 2,5 en una
-  planta, pero de 0,8 y 15,7 en las otras dos. Con la misma muestra, cambiar la agitación del
-  laboratorio de 1.300 a 1.000 rpm lo bajó a 0,4, y subir el aire de 12 a 18 L/min lo llevó a 6,2.
+Para el salto de escala hay un modelo más: `kelsall`, de dos componentes (Kelsall 1961). Cada
+especie lleva su cinética como (φ lenta, k rápida, k lenta):
 
-Por eso `factor_escalamiento` es un dato que se calibra con la planta, no una predicción.
+    batch:      (1 - φ)(1 - e^(-kf t)) + φ (1 - e^(-ks t))
+    N celdas:   (1 - φ)(1 - (1 + kf τ)^-N) + φ (1 - (1 + ks τ)^-N)
+
+En YAML se escribe `cinetica: {CuFeS2: {phi: 0.269, kf: 0.892, ks: 0.027}}`.
+
+**El caso.** Una mena polimetálica de sulfuros (Universidad Técnica de Košice, CC BY):
+- cinética de laboratorio en celdas Denver (Tablas 4-6);
+- un circuito piloto de 50 kg/h (Figura 5): rougher y scavenger de 2 celdas, cleaner de 17 L, y
+  el concentrado scavenger y las colas cleaner vuelven al rougher;
+- la simulación de los autores en HSC SIM (Tabla 8);
+- lo medido en el piloto (Tablas 9-11).
+
+`procesos/flotacion_datos.py` arma el circuito y `python ejemplos/flotacion_piloto.py` lo corre.
+
+**Supuestos declarados antes de correr:**
+- **Alimentación:** la de la Tabla 1 (0,85 % Cu; 0,14 % Zn; 2,36 % S), pasada a minerales con
+  la regla del artículo: Cu → calcopirita, Zn → esfalerita, el S que sobra → pirita, y el resto
+  cuarzo.
+- **Rougher y scavenger:** 14 min por celda, 28 min por etapa. Cuadra con 50 L para unos 111 L/h
+  de pulpa.
+- **Cleaner:** el τ que dan sus 17 L con el caudal de sólidos a 200 g/L, la densidad del cleaner
+  de laboratorio. El artículo no publica el τ del cleaner. Resulta en 33,6 min.
+
+| Prueba | Tolerancia | Resultado |
+|---|---|---|
+| Reproducir la simulación HSC: concentrado (Ccp, Sp, Py, Qtz) | ±2 puntos | 27,9 / 2,0 / 31,6 / 38,6 frente a 21,8 / 1,8 / 63,5 / 13,0: **solo Sp ✓** |
+| Reproducir la simulación HSC: relave | ±2 puntos | 4 de 4 ✓ |
+| Piloto: Cu del concentrado (9,27 %) | ±15 % relativo | 9,65 % (+4 %) ✓ |
+| Piloto: concentrado (Ccp, Sp, Py, Qtz: 31,3 / 2,65 / 58,0 / 8,2) | ±5 puntos | Ccp y Sp ✓; **Py 31,6 y Qtz 38,6 ✗** |
+| Piloto: relave (1,2 / 0 / 1,45 / 97,3) | ±0,5 puntos | Sp ✓; **Ccp 0,31, Py 0,24 y Qtz 99,4 ✗** |
+| Corte del piloto: falla si quedan fuera más de 4 de 9 | | **falla (5 fuera)** |
+
+El rendimiento del concentrado da 7,79 %, frente a 7,92 % en la simulación de los autores.
+
+**Hallazgos:**
+1. **La cinética de laboratorio predice el cobre, pero no la ganga.** La ley de Cu (+4 %) y la
+   calcopirita del concentrado caen dentro de tolerancia. La pirita y el cuarzo no: el modelo
+   arrastra cuarzo al concentrado, 38,6 % frente a los 8,2 % del piloto.
+2. **La simulación de los autores no se puede reproducir con lo publicado.** Faltan el τ del
+   cleaner y saber con qué alimentación simularon.
+   - Diagnóstico, después de correr (no cuenta como validación): con la alimentación de
+     laboratorio (Tabla 3: 0,792 % Cu y **3,93 % S**, casi el doble de S que la Tabla 1), el modelo
+     da 20,1 / 1,70 / 52,2 / 26,0 frente a sus 21,8 / 1,75 / 63,5 / 13,0.
+   - Con un cleaner de 12 min se acerca más: la pirita sube a 57,6.
+   - Todo indica que simularon con la alimentación de laboratorio y con un cleaner más corto.
+3. **El artículo tiene inconsistencias internas.**
+   - La Tabla 8 da 21,78 % de calcopirita en el concentrado simulado, que son 7,5 % de Cu, pero
+     el texto dice 9,02 %.
+   - El piloto no cierra entre intervalos: con 12,0 % de rendimiento a 10,68 % Cu y relave al
+     0,14 %, la alimentación de 120-180 min tendría 1,40 % de Cu, contra 0,85 % de la mena. El
+     circuito no estaba en régimen.
+4. **Sigue valiendo lo que dice Vallejos (2023):** el salto de laboratorio a planta no se predice
+   sin calibrar. El factor de escalamiento fue de 2,5 en una planta chilena y de 0,8 y 15,7 en
+   otras dos. `factor_escalamiento` es un dato de la planta.
 
 ## Ejemplo
 

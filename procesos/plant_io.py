@@ -194,13 +194,15 @@ def _unit(data: Any, index: int) -> Unit:
         if kind == "flotacion":
             kinetics = _require(data, "cinetica", where)
             if not isinstance(kinetics, Mapping):
-                raise PlantFileError(f"{where}.cinetica: mapa especie -> {{r_inf, k}}")
+                raise PlantFileError(
+                    f"{where}.cinetica: mapa especie -> {{r_inf, k}} o {{phi, kf, ks}}"
+                )
             tau, volume = data.get("tiempo_residencia_min"), data.get("volumen_celda_m3")
             return Flotation(
                 name,
                 inputs,
                 outputs,
-                {str(n): (float(v["r_inf"]), float(v["k"])) for n, v in kinetics.items()},
+                {str(n): _kinetic_params(v) for n, v in kinetics.items()},
                 int(_require(data, "celdas", where)),
                 str(data.get("modelo", "primer_orden")),
                 None if tau is None else float(tau),
@@ -253,6 +255,13 @@ def _unit(data: Any, index: int) -> Unit:
         "(mezclador, divisor, separador, reactor, calentador, equilibrio, evaporador, "
         "extraccion_solventes, despojo, electroobtencion, electrorrefinacion, molienda, flotacion)"
     )
+
+
+def _kinetic_params(value: Mapping[str, Any]) -> tuple[float, ...]:
+    """{r_inf, k} (primer orden, rectangular) o {phi, kf, ks} (Kelsall)."""
+    if "phi" in value:
+        return (float(value["phi"]), float(value["kf"]), float(value["ks"]))
+    return (float(value["r_inf"]), float(value["k"]))
 
 
 def _optional_float(data: Mapping[str, Any], key: str) -> float | None:
