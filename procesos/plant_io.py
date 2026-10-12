@@ -12,6 +12,8 @@ import yaml
 from .control import Controller, Goal, Manipulated
 from .costs import CostSpec
 from .equilibrium import EquilibriumReactor, database_path
+from .er import CONTACTS_V as ER_CONTACTS_V
+from .er import Electrorefining
 from .ew import CONTACTS_V, GAP_M, Electrowinning
 from .flotacion import Flotation
 from .flowsheet import Flowsheet
@@ -164,6 +166,31 @@ def _unit(data: Any, index: int) -> Unit:
                 metal=str(data.get("metal", "Cu")),
                 oxygen=str(data.get("oxigeno", "O2")),
             )
+        if kind == "electrorrefinacion":
+            arsenic = data.get("arsenico")
+            return Electrorefining(
+                name,
+                inputs,
+                outputs,
+                float(_require(data, "densidad_corriente", where)),
+                float(_require(data, "area_catodica", where)),
+                float(_require(data, "eficiencia_corriente", where)),
+                float(_require(data, "distancia_anodo_catodo", where)),
+                float(data.get("contactos_v", ER_CONTACTS_V)),
+                float(data.get("sobrepotencial_v", 0.0)),
+                float(data.get("ni_al_electrolito", 1.0)),
+                float(data.get("densidad", 1.2)),
+                copper=str(data.get("cobre_acuoso", "CuSO4")),
+                acid=str(data.get("acido", "H2SO4")),
+                water=str(data.get("agua", "H2O")),
+                metal=str(data.get("metal", "Cu")),
+                cuprite=str(data.get("cuprita", "Cu2O")),
+                nickel=str(data.get("niquel", "Ni")),
+                nickel_sulfate=str(data.get("sulfato_niquel", "NiSO4")),
+                arsenic=None if arsenic is None else str(arsenic),
+                nickel_limit_g_l=_optional_float(data, "limite_ni_g_l"),
+                liberator_efficiency=_optional_float(data, "eficiencia_liberadoras"),
+            )
         if kind == "flotacion":
             kinetics = _require(data, "cinetica", where)
             if not isinstance(kinetics, Mapping):
@@ -224,8 +251,13 @@ def _unit(data: Any, index: int) -> Unit:
     raise PlantFileError(
         f"{where}: tipo desconocido {kind!r} "
         "(mezclador, divisor, separador, reactor, calentador, equilibrio, evaporador, "
-        "extraccion_solventes, despojo, electroobtencion, molienda, flotacion)"
+        "extraccion_solventes, despojo, electroobtencion, electrorrefinacion, molienda, flotacion)"
     )
+
+
+def _optional_float(data: Mapping[str, Any], key: str) -> float | None:
+    value = data.get(key)
+    return None if value is None else float(value)
 
 
 def _controller(data: Any, index: int) -> Controller:

@@ -1,0 +1,81 @@
+# Nave de electrorrefinación con la geometría publicada de Mount Isa (compendio IsaKidd 2020:
+# 1.320 celdas, 36 cátodos de 0,82 m² por cara, 305 A/m², 97,5 % de eficiencia) y ánodos con el
+# análisis del ánodo comercial AC1 de Atlantic Copper (Metals 15(2) 113, 2025). ILUSTRATIVO: no
+# es una planta que publique sus flujos.
+# - Electrolito: el de la «Reference Tankhouse 3» de Kalliomäki et al. (2021), 20 L/min por celda
+#   (supuesto). El As disuelto se carga como H3AsO4.
+# - Ánodos: todo el O como Cu2O; Ni metálico, que pasa entero al electrolito (supuesto).
+#   35.786 kg/h de ánodos: Faraday disuelve el 78,1 % de cada ánodo en su ciclo de 18 días.
+# - Distancia ánodo-cátodo de la cosecha 2 (32,2 mm): paso de 100 mm, ánodo de 320 kg, placa de
+#   3,25 mm y medio depósito. Ver docs/er.md.
+# Una parte del electrolito pasa por celdas liberadoras (el equipo de electroobtención) y el lazo
+# de control ajusta su corriente para que el electrolito vuelva con el Cu con que llegó. Del
+# electrolito decobrizado sale la purga de Ni que pide la nave para quedarse en 18,9 g/L.
+nombre: Refinería con ánodos de Atlantic Copper y geometría de Mount Isa (ilustrativa)
+especies:
+  - {nombre: H2O, fase: l}
+  - {nombre: CuSO4, fase: aq}
+  - {nombre: H2SO4, fase: aq}
+  - {nombre: NiSO4, fase: aq}
+  - {nombre: H3AsO4, fase: aq}
+  - {nombre: Cu, fase: s}
+  - {nombre: Cu2O, fase: s}
+  - {nombre: Ni, fase: s}
+  - {nombre: Sn, fase: s}
+  - {nombre: Sb, fase: s}
+  - {nombre: As, fase: s}
+  - {nombre: Ag, fase: s}
+  - {nombre: Bi, fase: s}
+  - {nombre: Pb, fase: s}
+  - {nombre: Se, fase: s}
+  - {nombre: Te, fase: s}
+  - {nombre: O2, fase: g}
+alimentaciones:
+  Anodos:
+    flujos: {Cu: 35140.88, Cu2O: 494.49, Ni: 33.25, Sn: 4.04, Sb: 6.94, As: 30.81, Ag: 10.74,
+             Bi: 8.95, Pb: 39.58, Se: 14.17, Te: 2.15}
+    temperatura: 57
+  Electrolito a celdas:
+    flujos: {CuSO4: 180618.0, H2SO4: 274032.0, NiSO4: 78933.0, H3AsO4: 19656.1, H2O: 1347560.9}
+    temperatura: 57
+equipos:
+  - tipo: electrorrefinacion
+    nombre: Nave de refinacion
+    entradas: [Anodos, Electrolito a celdas]
+    salidas: [Electrolito de celdas, Catodos, Barro anodico, Chatarra anodica]
+    densidad_corriente: 305
+    area_catodica: 77932.8          # m²: 1.320 celdas × 36 cátodos × 2 caras × 0,82
+    eficiencia_corriente: 0.975
+    distancia_anodo_catodo: 0.0322
+    arsenico: H3AsO4
+    limite_ni_g_l: 18.9
+    eficiencia_liberadoras: 0.85
+  - tipo: divisor
+    nombre: A liberadoras
+    entradas: [Electrolito de celdas]
+    salidas: [Electrolito a liberadoras, Electrolito directo]
+    fracciones: [0.05, 0.95]
+  - tipo: electroobtencion
+    nombre: Liberadoras
+    entradas: [Electrolito a liberadoras]
+    salidas: [Electrolito decobrizado, Catodos liberadoras, Oxigeno]
+    densidad_corriente: 200          # A/m²; la ajusta el lazo de control
+    area_catodica: 900
+    eficiencia_corriente: 0.85
+  - tipo: divisor
+    nombre: Purga de niquel
+    entradas: [Electrolito decobrizado]
+    salidas: [Purga a planta de Ni, Retorno decobrizado]
+    fracciones: [0.01734, 0.98266]  # 1,37 m³/h de los 79,2 m³/h decobrizados
+  - tipo: mezclador
+    nombre: Retorno
+    entradas: [Electrolito directo, Retorno decobrizado]
+    salidas: [Electrolito de retorno]
+controladores:
+  - nombre: Cu del electrolito de retorno
+    ajustar: {equipo: Liberadoras, parametro: densidad_corriente, minimo: 20, maximo: 400}
+    meta: {corriente: Electrolito de retorno, propiedad: g_por_kg_agua, especie: CuSO4, valor: 134.0336}
+costos:
+  moneda: USD
+  por_tonelada_de: {corriente: Catodos, elemento: Cu}
+  electricidad_por_kwh: 0.08

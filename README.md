@@ -2,7 +2,7 @@
 
 Simulador de procesos metalúrgicos implementado **desde la literatura**: balance de masa y de calor de plantas con reacciones químicas, equilibrio acuoso, reciclos y lazos de control. Es independiente de cualquier software comercial.
 
-**Fases 1 a 4 (esta versión):** balance de masa y de calor en estado estacionario, equilibrio químico acuoso con PHREEQC, extracción por solventes y electroobtención de cobre, molienda conectada a simulador-conminucion, flotación cinética, fusión flash y conversión Peirce-Smith de cobre (balance de masa y de calor), horno de ánodos, y reporte HTML con diagrama de flujo y costo operativo.
+**Fases 1 a 4 (esta versión):** balance de masa y de calor en estado estacionario, equilibrio químico acuoso con PHREEQC, extracción por solventes y electroobtención de cobre, molienda conectada a simulador-conminucion, flotación cinética, fusión flash y conversión Peirce-Smith de cobre (balance de masa y de calor), horno de ánodos, electrorrefinación con purga y celdas liberadoras, y reporte HTML con diagrama de flujo y costo operativo.
 
 ```bash
 pip install -e .
@@ -39,7 +39,7 @@ Planta: Lixiviación de óxidos de cobre
 
 Además, 3 plantas reales publicadas: la producción de Constancia (Hudbay), el ácido de lixiviación de Marimaca y los cátodos del plan minero de Puquios. Las tolerancias se fijaron antes de correr. Detalle y hallazgos en [docs/VALIDACION_PLANTAS_REALES.md](docs/VALIDACION_PLANTAS_REALES.md).
 
-428 pruebas (más 32 fallos esperados: redondeos de la fuente, los límites de los modelos de actividad, la conductividad del electrolito, el del vapor ideal, la discrepancia JANAF-USGS del FeO, lo que el horno flash no alcanza y la carga de convertidor publicada que no cierra), cobertura del 97 % y ruff limpio:
+450 pruebas (más 41 fallos esperados: redondeos de la fuente, los límites de los modelos de actividad, la conductividad del electrolito, el del vapor ideal, la discrepancia JANAF-USGS del FeO, lo que el horno flash no alcanza, la carga de convertidor publicada que no cierra y el voltaje de refinación frente al compendio IsaKidd), cobertura del 97 % y ruff limpio:
 
 ```bash
 python -m pytest --cov=procesos
@@ -139,6 +139,17 @@ Ver [docs/fusion.md](docs/fusion.md).
 
 Ver [docs/conversion.md](docs/conversion.md).
 
+## Electrorrefinación (fase 4c)
+
+El equipo `electrorrefinacion` recibe ánodos y electrolito y da cátodos (Faraday), barro, chatarra, voltaje de celda y energía. También calcula lo que se acumula en el electrolito: el Ni desplaza Cu sin gastar ácido, y el Cu2O del ánodo suma Cu y consume ácido. Con eso dimensiona la purga de Ni y las celdas liberadoras, que usan el equipo de electroobtención.
+- La conductividad viene del modelo κER.2 (Kalliomäki et al. 2021, con Ni y As). Contra mediciones independientes (Fuentes, USM 2022), quedan dentro 5 de 8 y pasa el corte. Con M3 sobrestima 7 a 13 %, como el modelo de electroobtención con esa misma muestra.
+- Mount Isa (compendio IsaKidd): Faraday con su geometría da 93,5 % de disponibilidad, coherente con su capacidad.
+- El voltaje no está validado: j·L/κ da un tercio menos de caída en el electrolito que la refinería típica del compendio.
+- El reparto de impurezas no está validado contra planta.
+- `ejemplos/refineria_atlantic_mount_isa.yaml`: ánodos de Atlantic Copper con la geometría de Mount Isa, más liberadoras y purga (ilustrativo).
+
+Ver [docs/er.md](docs/er.md).
+
 ## Reporte HTML y costo operativo (fase 4)
 
 ```bash
@@ -161,7 +172,8 @@ Ver [docs/reporte-y-costos.md](docs/reporte-y-costos.md).
 | 4 ✅ | Reporte HTML con diagrama de flujo y costo operativo; sin costo de capital (no hay correlaciones públicas validadas) |
 | 4a ✅ | Pirometalurgia: fusión flash de cobre, balance de masa y de calor (datos públicos USGS, JANAF, USBM) |
 | 4b ✅ | Conversión Peirce-Smith y horno de ánodos (este último sin validar contra planta) |
-| 4c-4d | Pendientes: electrorrefinación, fundición de estaño |
+| 4c ✅ | Electrorrefinación con purga de Ni y celdas liberadoras; conductividad validada, voltaje y reparto de impurezas no |
+| 4d | Pendiente: fundición de estaño |
 
 ## Límites de esta versión
 

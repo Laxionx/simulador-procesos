@@ -19,6 +19,7 @@ from .report import (
     element_balance,
     energy_balance,
     equilibrium_report,
+    er_report,
     ew_report,
     flotation_report,
     grinding_report,
@@ -220,6 +221,24 @@ def _electrowinning(flowsheet: Flowsheet, solution: Solution) -> str:
     return "".join(parts)
 
 
+def _electrorefining(flowsheet: Flowsheet, solution: Solution) -> str:
+    parts = []
+    for name, er in er_report(flowsheet, solution):
+        rows = [
+            f"<tr><td>{escape(label)}</td>{_cell(volts, 3)}</tr>"
+            for label, volts in er.components.items()
+        ]
+        warnings = "".join(f'<p class="aviso">{escape(w)}</p>' for w in er.warnings)
+        parts.append(
+            f"<h2>Electrorrefinación · {escape(name)}</h2><p>{_num(er.current_a / 1000, 1)} kA · "
+            f"cátodos <b>{_num(er.copper_kg_h, 1)} kg/h</b> · celda <b>{_num(er.cell_voltage, 3)} "
+            f"V</b> · <b>{_num(er.specific_energy_kwh_t, 0)} kWh/t</b> · el electrolito gana "
+            f"{_num(er.copper_gain_kg_h, 1)} kg/h de Cu y {_num(er.nickel_gain_kg_h, 2)} kg/h de Ni"
+            f"</p>{warnings}" + _table(["Componente del voltaje", "V"], rows)
+        )
+    return "".join(parts)
+
+
 def _costs(plant: Plant, flowsheet: Flowsheet, solution: Solution) -> tuple[str, str]:
     """(sección, KPI)."""
     if plant.costs is None:
@@ -285,7 +304,7 @@ def html_report(
 <h2>Balance por elemento</h2>{_elements(flowsheet, solution)}
 {_energy(flowsheet, solution)}{_equilibrium(flowsheet, solution)}
 {_grinding(flowsheet, solution)}{_flotation(flowsheet, solution)}
-{_electrowinning(flowsheet, solution)}{control}{cost_section}
+{_electrowinning(flowsheet, solution)}{_electrorefining(flowsheet, solution)}{control}{cost_section}
 <footer>Simulador implementado desde la literatura. Estado estacionario; los límites de cada
 modelo están en la documentación del proyecto.</footer>
 </main></body></html>

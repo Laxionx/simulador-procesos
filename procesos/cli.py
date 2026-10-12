@@ -10,13 +10,14 @@ from pathlib import Path
 from .control import ControlError, solve_with_controllers
 from .costs import operating_cost
 from .flotacion import MODELS, fit_kinetics
-from .flowsheet import ConvergenceError
+from .flowsheet import ConvergenceError, Flowsheet, Solution
 from .html_report import html_report, write_html
 from .plant_io import PlantFileError, load_plant
 from .report import (
     element_balance,
     energy_balance,
     equilibrium_report,
+    er_report,
     ew_report,
     flotation_report,
     grinding_report,
@@ -26,6 +27,30 @@ from .report import (
     write_csv,
     write_xlsx,
 )
+
+
+def _print_er(flowsheet: Flowsheet, solution: Solution) -> None:
+    units = {u.name: u for u in flowsheet.units}
+    for name, er in er_report(flowsheet, solution):
+        print(
+            f"  ER «{name}»: {er.current_a / 1000:,.1f} kA · cátodos {er.copper_kg_h:,.1f} kg/h · "
+            f"celda {er.cell_voltage:.3f} V · {er.specific_energy_kwh_t:,.0f} kWh/t · "
+            f"κ {er.conductivity_s_m:.1f} S/m"
+        )
+        print(
+            f"    El electrolito gana {er.copper_gain_kg_h:,.1f} kg/h de Cu y "
+            f"{er.nickel_gain_kg_h:,.2f} kg/h de Ni y pierde {er.acid_consumed_kg_h:,.1f} kg/h "
+            "de ácido"
+        )
+        unit = units[name]
+        if unit.nickel_limit_g_l:
+            bleed = er.nickel_bleed_m3_h(unit.nickel_limit_g_l)
+            print(f"    Purga para {unit.nickel_limit_g_l:g} g/L de Ni: {bleed:,.2f} m³/h")
+        if unit.liberator_efficiency:
+            kiloamps = er.liberator_current_a(unit.liberator_efficiency) / 1000
+            print(f"    Celdas liberadoras para retirar todo el Cu ganado: {kiloamps:,.1f} kA")
+        for warning in er.warnings:
+            print(f"    Aviso: {warning}")
 
 
 def _solve(path: Path, output: Path | None, html: Path | None = None) -> int:
@@ -97,6 +122,7 @@ def _solve(path: Path, output: Path | None, html: Path | None = None) -> int:
         )
         for warning in ew.warnings:
             print(f"    Aviso: {warning}")
+    _print_er(flowsheet, solution)
     closure = worst_closure(flowsheet, solution)
     print(f"  Peor error de cierre: {closure:.2e}")
     if plant.costs is not None:

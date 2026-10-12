@@ -4,6 +4,7 @@ Fase 1: balance de masa con reacciones, reciclos y lazos de control.
 """
 
 from .control import ControlError, Controller, Goal, Manipulated, solve_with_controllers
+from .er import Electrorefining
 from .ew import Electrowinning
 from .flotacion import Flotation, fit_kinetics
 from .flowsheet import ConvergenceError, Flowsheet, Solution
@@ -20,6 +21,7 @@ __all__ = [
     "Catalog",
     "ControlError",
     "DEFAULT_THERMO",
+    "Electrorefining",
     "Electrowinning",
     "Evaporator",
     "Controller",

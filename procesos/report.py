@@ -9,6 +9,7 @@ from typing import Any
 
 from openpyxl import Workbook
 
+from .er import Electrorefining
 from .ew import Electrowinning
 from .flotacion import Flotation
 from .flowsheet import Flowsheet, Solution
@@ -159,6 +160,15 @@ def ew_report(flowsheet: Flowsheet, solution: Solution) -> list[tuple[str, Any]]
         (unit.name, unit.solve([solution.streams[n] for n in unit.inputs], flowsheet.catalog))
         for unit in flowsheet.units
         if isinstance(unit, Electrowinning)
+    ]
+
+
+def er_report(flowsheet: Flowsheet, solution: Solution) -> list[tuple[str, Any]]:
+    """(nombre, ERResult) de cada equipo de electrorrefinación."""
+    return [
+        (unit.name, unit.solve([solution.streams[n] for n in unit.inputs], flowsheet.catalog))
+        for unit in flowsheet.units
+        if isinstance(unit, Electrorefining)
     ]
 
 

@@ -421,6 +421,7 @@ class Evaporator:
 def unit_species(unit: Unit) -> set[str]:
     """Especies que un equipo menciona en sus parámetros (para validar contra el catálogo)."""
     from .equilibrium import EquilibriumReactor
+    from .er import Electrorefining
     from .ew import Electrowinning
     from .flotacion import Flotation
     from .molienda import Grinding
@@ -429,6 +430,10 @@ def unit_species(unit: Unit) -> set[str]:
         return set(unit.minerals.values())
     if isinstance(unit, Electrowinning):
         return {unit.copper, unit.acid, unit.water, unit.metal, unit.oxygen}
+    if isinstance(unit, Electrorefining):
+        return {unit.copper, unit.acid, unit.water, unit.metal} | (
+            {unit.arsenic} if unit.arsenic else set()
+        )
     if isinstance(unit, Grinding):
         return {unit.water}
     if isinstance(unit, Flotation):
