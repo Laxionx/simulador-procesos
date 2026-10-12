@@ -39,7 +39,7 @@ Planta: Lixiviación de óxidos de cobre
 
 Además, 3 plantas reales publicadas: la producción de Constancia (Hudbay), el ácido de lixiviación de Marimaca y los cátodos del plan minero de Puquios. Las tolerancias se fijaron antes de correr. Detalle y hallazgos en [docs/VALIDACION_PLANTAS_REALES.md](docs/VALIDACION_PLANTAS_REALES.md).
 
-495 pruebas (más 50 fallos esperados: redondeos de la fuente, los límites de los modelos de actividad, la conductividad del electrolito, el del vapor ideal, la discrepancia JANAF-USGS del FeO, lo que el horno flash no alcanza, la carga de convertidor publicada que no cierra, el voltaje de refinación frente al compendio IsaKidd y la flotación de laboratorio a piloto), cobertura del 97 % y ruff limpio:
+517 pruebas (más 50 fallos esperados: redondeos de la fuente, los límites de los modelos de actividad, la conductividad del electrolito, el del vapor ideal, la discrepancia JANAF-USGS del FeO, lo que el horno flash no alcanza, la carga de convertidor publicada que no cierra, el voltaje de refinación frente al compendio IsaKidd y la flotación de laboratorio a piloto), cobertura del 97 % y ruff limpio:
 
 ```bash
 python -m pytest --cov=procesos
@@ -155,7 +155,8 @@ Ver [docs/er.md](docs/er.md).
 `procesos.estano.smelt_tin` hace el balance de masa de una fundición de estaño como la de Funsur. Hay dos etapas: la fusión del concentrado da estaño crudo y una escoria rica, y la reducción de la escoria da hardhead y escoria de desecho. El hardhead y los humos se reciclan. El reparto Sn/Fe sigue el coeficiente de distribución D de la reacción SnO + Fe = Sn + FeO.
 - Los D de la literatura (150-400 en la fusión y 20-50 en la reducción, Kandalam et al. 2023) se sostienen frente a 81 equilibrios medidos (Takeda et al. 1990): medianas de 166 y 35, pero con mucha dispersión, y D sube con la basicidad.
 - Funsur 2022-2025 (Memoria Integrada 2025 de Minsur): la recuperación calculada con el Sn que entra y el refinado queda 0,6-0,7 puntos bajo la reportada, los cuatro años. Con la ganga supuesta, la escoria de desecho al 0,55 % explica solo una cuarta parte de la pérdida.
-- Balance de masa sin calor. `python ejemplos/estano_funsur.py` corre el caso Funsur 2025 (ilustrativo: la ganga del concentrado no se publica).
+- Balance de calor con gas natural por etapa (`procesos.estano_calor`): 2,34 GJ por t de concentrado sin pérdidas del horno. Da 46.960 t de CO2, por debajo de las 85.087 t directas de Pisco en 2025, que son una cota superior de las pérdidas.
+- `python ejemplos/estano_funsur.py` corre el caso Funsur 2025 (ilustrativo: la ganga del concentrado no se publica).
 
 Ver [docs/estano.md](docs/estano.md).
 

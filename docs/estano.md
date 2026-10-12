@@ -115,17 +115,58 @@ D = 200, la razón Fe/Sn de la escoria es 4. Las escorias reales de primera etap
 25 % de Sn y llevan más hierro. Según la prensa especializada (Discovery Alert, septiembre
 de 2026), la alimentación del horno de Funsur incluye mineral de hierro; Minsur no lo publica.
 
+## Balance de calor: gas natural por etapa
+
+`procesos.estano_calor.tin_heat` toma el balance de masa y cierra el calor de cada etapa
+quemando gas natural con el aire justo (CH4 + 2 O2 + 7,52 N2 → CO2 + 2 H2O + 7,52 N2).
+- **Etapa 1:** entran a 25 °C las cargas, la caliza, el carbono, el hardhead y los humos; salen a
+  T1 = 1.200 °C.
+- **Etapa 2:** la escoria entra caliente y sale todo a T2 = 1.400 °C. Son las temperaturas de los
+  D de Kandalam et al.
+- **Pérdidas:** la pérdida de cada horno es un dato, 0 por defecto. Si el calor sobra, no se quema
+  gas y se informa el sobrante.
+
+**Datos:**
+- **USGS B2131:** Sn (sólido y líquido, de su tabla), SnO2 (casiterita), TiO2 (rutilo), CaO y CO.
+  El vapor de agua sobre 800 K también viene de USGS; empalma con el ajuste de JANAF con
+  0,03 kJ/mol de diferencia.
+- **JANAF:** Fe (tabla Fe-003, con las transiciones α-γ-δ).
+- **CODATA:** SnO sólido, solo a 25 °C.
+- **SnO líquido:** no está en esas fuentes. Se toma de Takeda et al. (1990, ec. 5),
+  ΔG° = −274.500 + 93,3·T J, es decir h(SnO, l) = h(Sn, l) + ½ h(O2) − 274,5 kJ/mol. Está
+  medido entre 1.366 y 1.573 K; a 1.673 K es una extrapolación.
+- **Humo de SnO:** se trata como SnO líquido, sin el calor de vaporización.
+
+| Prueba | Tolerancia | Resultado |
+|---|---|---|
+| USGS frente a JANAF a 1.500 K: CaO y CO | ±2 % | −0,5 y −0,1 % ✓ |
+| El gas cierra cada etapa con su pérdida; PCI del CH4 a 25 °C | 1e-12; 0,5 kJ/mol | sí |
+| Coherencia: CO2 mínimo del modelo bajo el CO2 directo de Pisco 2025 | debajo | 46.960 < 85.087 t ✓ |
+
+Funsur 2025 con la ganga supuesta y sin pérdidas del horno:
+- **Gas natural:** 9.144 t/año, de las que 8.463 van a la etapa 1. Son **2,34 GJ por t de
+  concentrado**.
+- **CO2:** 46.960 t/año. De ellas, 21.875 vienen del carbono reductor y la caliza, y 25.085 del
+  gas.
+- **Lo que falta para el CO2 reportado:** Pisco emitió 85.087 t directas, el 35,0 % de las
+  243.106 t de Minsur. Si el resto (38.100 t) fuera gas quemado a 1.200 °C, serían a lo sumo
+  317 TJ/año de pérdidas y otros usos.
+
+Es una cota superior, no una medida. El CO2 de Pisco incluye la refinería, el diésel y todo
+lo demás que se quema en la planta, y el carbono reductor real no es carbono puro.
+
 ## Mutaciones
 
-Las 14 mutaciones del módulo hacen fallar las pruebas. Dos sobrevivieron a la primera vuelta y
-mostraron pruebas que faltaban, que se agregaron:
-- con 50 % de CO, las fórmulas 2 − r y 1 + r dan lo mismo, así que hacía falta probar otra razón;
-- no había una prueba de la fracción de humo de cada etapa.
+Las 14 mutaciones del balance de masa y las 7 del de calor hacen fallar las pruebas. Las que
+sobrevivieron a la primera vuelta mostraron pruebas que faltaban, y se agregaron:
+- en el balance de masa: otra razón de CO y la fracción de humo de cada etapa;
+- en el de calor: el N2 del aire caliente, el CO2 de la calcinación y la pérdida propia de cada
+  etapa.
 
 ## Límites
 
-- Balance de masa: sin calor, sin combustible y sin actividades. D es un parámetro de la planta:
-  sube con la basicidad y varía mucho de un ensayo a otro.
+- Sin actividades: D es un parámetro de la planta, sube con la basicidad y varía mucho de un
+  ensayo a otro. El gas sale de un balance con pérdidas dadas, no medidas.
 - Sin Pb, As, Sb, Bi, Cu ni S. La ganga distinta de SiO2, CaO, Al2O3, MgO y TiO2 entra como
   inerte («otros»).
 - El humo se recicla como SnO; no se modela su oxidación a SnO2 en la cámara.

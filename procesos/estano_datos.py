@@ -122,3 +122,7 @@ TAKEDA_1573 = (
     ("130", 44.8, 4.9, 0.0, 9.5 + 20.2, 0.62, None),
     ("131", 55.3, 2.0, 0.0, 23.9, 0.34, None),
 )
+
+# Emisiones directas (alcance 1) de Minsur en 2025: 243.105,8 t CO2eq, de las que la planta de
+# Pisco es el 35,0 % (Memoria Integrada 2025, Gráfico 7). Incluye todo el combustible de la planta.
+PISCO_SCOPE1_2025_T = 0.350 * 243_105.8

@@ -114,8 +114,13 @@ _JANAF = {
     ("H2SO4", "l"): ThermoRecord(  # H-075, 283-600 K
         -813.989, (MaierKelley(283.456, 600.0, 80.0059, 0.194857, 42715.4),), JANAF_FIT
     ),
-    ("H2O", "g"): ThermoRecord(  # H-064, gas ideal, 200-800 K
-        -241.826, (MaierKelley(200.0, 800.0, 29.1426, 0.0117234, 76507.8),), JANAF_FIT
+    ("H2O", "g"): ThermoRecord(  # H-064, gas ideal, 200-800 K; sobre 800 K, vapor de USGS B2131
+        -241.826,
+        (
+            MaierKelley(200.0, 800.0, 29.1426, 0.0117234, 76507.8),
+            MaierKelley(800.0, 2500.0, 27.057, 1.7584e-2, 2.7696e5, -27.656, -2.5097e-6),
+        ),
+        JANAF_FIT + "; sobre 800 K, USGS Bulletin 2131",
     ),
 }
 

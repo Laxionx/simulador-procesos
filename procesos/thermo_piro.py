@@ -110,6 +110,28 @@ _FE3O4_JANAF = TabulatedEnthalpy(
 )  # fmt: skip
 JANAF_TABLE = "ΔfH de USGS B2131; calor sensible de la tabla NIST-JANAF interpolada"
 
+# Estaño (fase 4d). USGS B2131: Sn de la tabla (H-H298)/T × T, con la fusión a 505,1 K; Cp de
+# casiterita, rutilo, cal y CO. Fe de la tabla JANAF Fe-003 (α hasta 1.184 K, γ hasta 1.665 K, δ).
+_SN_USGS = (
+    TabulatedEnthalpy((298.15, 400, 500, 505.1), (0.0, 2.852, 5.845, 6.0006)),
+    TabulatedEnthalpy(
+        (505.1, 600, 800, 1000, 1200, 1400, 1500, 1600, 1800),
+        (13.1983, 15.948, 21.608, 27.20, 32.796, 38.416, 41.25, 44.096, 49.806),
+    ),
+)
+_FE_JANAF = (
+    TabulatedEnthalpy(
+        (298.15, 300, 400, 500, 600, 700, 800, 900, 1000, 1042, 1100, 1184),
+        (0.0, 0.046, 2.674, 5.527, 8.613, 11.939, 15.553, 19.582, 24.329, 26.960, 29.972, 33.619),
+    ),
+    TabulatedEnthalpy((1184, 1200, 1300, 1400, 1500, 1600, 1665),
+                      (34.519, 35.062, 38.505, 42.033, 45.643, 49.338, 51.784)),
+    TabulatedEnthalpy((1665, 1700, 1800, 1809), (52.621, 54.066, 58.263, 58.645)),
+)  # fmt: skip
+USGS_TABLE = "USGS Bulletin 2131 (ΔfH y tabla H-H298)"
+FE_TABLE = "Tabla NIST-JANAF Fe-003 interpolada"
+SNO_CODATA = "CODATA (Cox, Wagman y Medvedev 1984), vía NIST WebBook; solo a 25 °C"
+
 # RI 8305, h - h298 en kcal/mol: α, β, γ y líquido.
 _CU2S = (
     EnthalpyPolynomial(298.15, 376.0, 5.24e-3, 17.72e-6, -2.29e2, -2.369),
@@ -146,6 +168,26 @@ PIRO = {
     ("SO2", "g"): ThermoRecord(
         -296.8422, _shomate(-296.8422, *_SO2), "NIST WebBook, Shomate (Chase 1998)"
     ),
+    # Estaño (fase 4d)
+    ("Sn", "l"): ThermoRecord(0.0, _SN_USGS, USGS_TABLE),
+    ("Fe", "s"): ThermoRecord(0.0, _FE_JANAF, FE_TABLE),
+    ("SnO2", "s"): ThermoRecord(
+        -577.6, (MaierKelley(298.15, 1500.0, 76.04, 7.364e-3, -2.224e6),), USGS_CP
+    ),
+    ("SnO", "s"): ThermoRecord(-280.71, (ConstantCp(0.0),), SNO_CODATA),
+    ("TiO2", "s"): ThermoRecord(
+        -944.0, (MaierKelley(298.15, 2100.0, 84.62, 5.990e-4, -1.101e6, -295.7),), USGS_CP
+    ),
+    ("CaO", "s"): ThermoRecord(
+        -635.1, (MaierKelley(298.15, 2500.0, 51.85, 2.444e-3, -9.340e5),), USGS_CP
+    ),
+    ("CO", "g"): ThermoRecord(
+        -110.5,
+        (MaierKelley(298.15, 2500.0, 39.76, 3.188e-3, 5.292e5, -301.3, -8.078e-7),),
+        USGS_CP,
+    ),
+    ("CH4", "g"): _at25(-74.8),
+    ("C", "s"): _at25(0.0),
     # Minerales de la alimentación (a 25 °C)
     ("CuFeS2", "s"): _at25(-194.9),
     ("FeS2", "s"): _at25(-171.5),
