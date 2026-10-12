@@ -14,6 +14,7 @@ from .costs import CostSpec
 from .equilibrium import EquilibriumReactor, database_path
 from .ew import CONTACTS_V, GAP_M, Electrowinning
 from .flowsheet import Flowsheet
+from .molienda import Grinding, template
 from .reactions import Reaction, parse_equation
 from .species import Catalog, make_species
 from .stream import STANDARD_PRESSURE, STANDARD_TEMPERATURE, Stream
@@ -162,6 +163,25 @@ def _unit(data: Any, index: int) -> Unit:
                 metal=str(data.get("metal", "Cu")),
                 oxygen=str(data.get("oxigeno", "O2")),
             )
+        if kind == "molienda":
+            circuit = data.get("circuito")
+            f80, p80 = data.get("f80"), data.get("p80")
+            config = None
+            if circuit is not None:
+                power = data.get("potencia_kw")
+                config = template(str(data.get("caso", "bougainville")),
+                                  None if power is None else float(power))  # fmt: skip
+            return Grinding(
+                name,
+                inputs,
+                outputs,
+                float(_require(data, "wi", where)),
+                None if f80 is None else float(f80),
+                None if p80 is None else float(p80),
+                None if circuit is None else str(circuit),
+                config,
+                str(data.get("agua", "H2O")),
+            )
         if kind == "calentador":
             temperature, duty = data.get("temperatura"), data.get("calor_kw")
             return Heater(
@@ -171,12 +191,12 @@ def _unit(data: Any, index: int) -> Unit:
                 None if temperature is None else float(temperature),
                 None if duty is None else float(duty),
             )
-    except (TypeError, ValueError, AttributeError, FileNotFoundError) as error:
+    except (TypeError, ValueError, AttributeError, FileNotFoundError, ImportError) as error:
         raise PlantFileError(f"{where}: {error}") from error
     raise PlantFileError(
         f"{where}: tipo desconocido {kind!r} "
         "(mezclador, divisor, separador, reactor, calentador, equilibrio, evaporador, "
-        "extraccion_solventes, despojo, electroobtencion)"
+        "extraccion_solventes, despojo, electroobtencion, molienda)"
     )
 
 

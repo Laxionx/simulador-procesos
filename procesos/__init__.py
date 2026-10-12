@@ -6,6 +6,7 @@ Fase 1: balance de masa con reacciones, reciclos y lazos de control.
 from .control import ControlError, Controller, Goal, Manipulated, solve_with_controllers
 from .ew import Electrowinning
 from .flowsheet import ConvergenceError, Flowsheet, Solution
+from .molienda import Grinding
 from .plant_io import Plant, PlantFileError, load_plant
 from .reactions import Reaction, check_balance, parse_equation
 from .species import Catalog, Species, make_species
@@ -24,6 +25,7 @@ __all__ = [
     "ConvergenceError",
     "Flowsheet",
     "Goal",
+    "Grinding",
     "Heater",
     "Manipulated",
     "Mixer",

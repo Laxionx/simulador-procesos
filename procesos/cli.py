@@ -17,6 +17,7 @@ from .report import (
     energy_balance,
     equilibrium_report,
     ew_report,
+    grinding_report,
     stream_table,
     sx_report,
     worst_closure,
@@ -73,6 +74,16 @@ def _solve(path: Path, output: Path | None, html: Path | None = None) -> int:
             f"{sx.raffinate_g_l:.3f} g/L · orgánico sale con {sx.loaded_g_l:.3f} g/L · "
             f"pH {sx.ph[-1]:.2f} · transfiere {sx.transferred_mol_h * 63.546e-3:,.2f} kg/h de Cu"
         )
+    for name, mo in grinding_report(flowsheet, solution):
+        load = mo.circulating_load
+        circ = "" if load is None else f" · carga circulante {load:.1%}"
+        print(
+            f"  Molienda «{name}»: {mo.solids_t_h:,.1f} t/h · F80 {mo.f80_um:,.0f} → P80 "
+            f"{mo.p80_um:,.0f} µm · Bond {mo.bond_kwh_t:.2f} kWh/t · {mo.power_kw:,.0f} kW "
+            f"({mo.power_basis}){circ}"
+        )
+        if mo.water_added_t_h > 0:
+            print(f"    El circuito agrega {mo.water_added_t_h:,.1f} t/h de agua (no se suma)")
     for name, ew in ew_report(flowsheet, solution):
         print(
             f"  EW «{name}»: {ew.current_a / 1000:,.1f} kA · cátodos {ew.copper_kg_h:,.2f} kg/h · "

@@ -26,6 +26,7 @@ KIND = {
     "EquilibriumReactor": "equilibrio",
     "SolventExtraction": "extracción SX",
     "Electrowinning": "electroobtención",
+    "Grinding": "molienda",
 }
 
 

@@ -2,7 +2,7 @@
 
 Simulador de procesos metalúrgicos implementado **desde la literatura**: balance de masa y de calor de plantas con reacciones químicas, equilibrio acuoso, reciclos y lazos de control. Es independiente de cualquier software comercial.
 
-**Fases 1 a 4 (esta versión):** balance de masa y de calor en estado estacionario, equilibrio químico acuoso con PHREEQC, extracción por solventes y electroobtención de cobre, y reporte HTML con diagrama de flujo y costo operativo.
+**Fases 1 a 4 (esta versión):** balance de masa y de calor en estado estacionario, equilibrio químico acuoso con PHREEQC, extracción por solventes y electroobtención de cobre, molienda conectada a simulador-conminucion, y reporte HTML con diagrama de flujo y costo operativo.
 
 ```bash
 pip install -e .
@@ -39,7 +39,7 @@ Planta: Lixiviación de óxidos de cobre
 
 Además, 3 plantas reales publicadas: la producción de Constancia (Hudbay), el ácido de lixiviación de Marimaca y los cátodos del plan minero de Puquios. Las tolerancias se fijaron antes de correr. Detalle y hallazgos en [docs/VALIDACION_PLANTAS_REALES.md](docs/VALIDACION_PLANTAS_REALES.md).
 
-297 pruebas (más 23 fallos esperados: redondeos de la fuente, los límites de los modelos de actividad y el del vapor ideal), cobertura del 98 % y ruff limpio:
+319 pruebas (más 23 fallos esperados: redondeos de la fuente, los límites de los modelos de actividad, la conductividad del electrolito y el del vapor ideal), cobertura del 97 % y ruff limpio:
 
 ```bash
 python -m pytest --cov=procesos
@@ -99,6 +99,15 @@ Ver [docs/ew.md](docs/ew.md).
 python -m procesos resolver ejemplos/sx_ew_circuito.yaml
 ```
 
+## Molienda conectada a simulador-conminucion
+
+El equipo `molienda` llama al proyecto hermano [simulador-conminucion](https://github.com/Laxionx/simulador-conminucion) (extra opcional: `pip install -e ".[molienda]"`). No cambia la composición: entrega el P80, la carga circulante y la potencia, que entra al costo como electricidad.
+- Modo Bond (Wi, F80, P80) o modo circuito (molino y ciclón simulados con la plantilla Bougainville, validada contra MODSIM).
+- Lo conectado es idéntico a correr conminucion por separado, y conserva sus validaciones: Bougainville contra MODSIM (carga circulante 81,87 % frente a 81,92 %) y Constancia (14 muestreos de Bond a ±5 %).
+- `ejemplos/concentradora_con_molienda.yaml`: molienda + flotación rougher-cleaner; 100 t/h, P80 221 µm, 1.087 kW.
+
+Ver [docs/molienda.md](docs/molienda.md).
+
 ## Reporte HTML y costo operativo (fase 4)
 
 ```bash
@@ -125,7 +134,7 @@ Ver [docs/reporte-y-costos.md](docs/reporte-y-costos.md).
 - Sin `balance_de_calor`, la temperatura se transporta sin balancear: el mezclador la promedia por masa.
 - El balance de calor ya incluye el calor de dilución del H2SO4 (Wu y Young 1980; NBS 1982) y la evaporación del agua (IAPWS-IF97). El vapor se trata como ideal, así que a varios bar el error pasa del 1,8 %, y no se modela la subida del punto de ebullición (ver [docs/balance-de-calor.md](docs/balance-de-calor.md)).
 - La presión se transporta pero no se balancea.
-- Los separadores usan recuperaciones fijas. Los modelos físicos de flotación, clasificación y molienda viven en el proyecto hermano `simulador-conminucion`.
+- Los separadores usan recuperaciones fijas. La molienda se conecta con el proyecto hermano `simulador-conminucion` (ver arriba); la granulometría no viaja a los equipos siguientes.
 
 ## Licencia
 

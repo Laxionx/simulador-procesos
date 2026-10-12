@@ -11,6 +11,7 @@ from openpyxl import Workbook
 
 from .ew import Electrowinning
 from .flowsheet import Flowsheet, Solution
+from .molienda import Grinding
 from .species import Catalog
 from .stream import Stream, element_flows, mix
 from .thermo import stream_enthalpy
@@ -116,7 +117,7 @@ def energy_balance(flowsheet: Flowsheet, solution: Solution) -> list[EnergyRow]:
         inputs = [solution.streams[n] for n in unit.inputs]
         duty = (
             unit.heat_duty(inputs, catalog)
-            if isinstance(unit, Heater | Evaporator | Electrowinning)
+            if isinstance(unit, Heater | Evaporator | Electrowinning | Grinding)
             or (isinstance(unit, Reactor) and unit.temperature is not None)
             else 0.0
         )
@@ -157,6 +158,15 @@ def ew_report(flowsheet: Flowsheet, solution: Solution) -> list[tuple[str, Any]]
         (unit.name, unit.solve([solution.streams[n] for n in unit.inputs], flowsheet.catalog))
         for unit in flowsheet.units
         if isinstance(unit, Electrowinning)
+    ]
+
+
+def grinding_report(flowsheet: Flowsheet, solution: Solution) -> list[tuple[str, Any]]:
+    """(nombre, GrindResult) de cada equipo de molienda."""
+    return [
+        (unit.name, unit.solve([solution.streams[n] for n in unit.inputs], flowsheet.catalog))
+        for unit in flowsheet.units
+        if isinstance(unit, Grinding)
     ]
 
 

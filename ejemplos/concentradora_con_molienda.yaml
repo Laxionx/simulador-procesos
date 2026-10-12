@@ -1,0 +1,40 @@
+# Concentradora con molienda: el circuito molino-ciclón se simula con el proyecto hermano
+# simulador-conminucion (pip install -e ".[molienda]") y su producto pasa a la flotación
+# rougher-cleaner de concentradora_cu.yaml. La plantilla del circuito es el caso Bougainville,
+# validado contra MODSIM 3.6.24; su molino (5.000 kW para 460 t/h) se escala a 1.087 kW para
+# 100 t/h, la misma energía específica. La molienda no cambia la composición: entrega el P80, la
+# carga circulante y la potencia, que entra al costo como electricidad. Ver docs/molienda.md.
+nombre: Concentradora de cobre con molienda y flotación rougher-cleaner
+especies:
+  - {nombre: CuFeS2, fase: s}
+  - {nombre: SiO2, fase: s}
+  - {nombre: H2O, fase: l}
+alimentaciones:
+  Mineral: {flujos: {CuFeS2: 2900.0, SiO2: 97100.0, H2O: 150000.0}}
+equipos:
+  - tipo: molienda
+    nombre: Molienda
+    entradas: [Mineral]
+    salidas: [Pulpa molida]
+    wi: 14.0                   # kWh/t, para la energía de Bond que se informa
+    circuito: cerrado_directo
+    caso: bougainville
+    potencia_kw: 1087
+  - tipo: mezclador
+    nombre: Cajón rougher
+    entradas: [Pulpa molida, Relave cleaner]
+    salidas: [Alimentacion rougher]
+  - tipo: separador
+    nombre: Rougher
+    entradas: [Alimentacion rougher]
+    salidas: [Concentrado rougher, Relave final]
+    recuperaciones: {CuFeS2: 0.92, SiO2: 0.08, H2O: 0.15}
+  - tipo: separador
+    nombre: Cleaner
+    entradas: [Concentrado rougher]
+    salidas: [Concentrado final, Relave cleaner]
+    recuperaciones: {CuFeS2: 0.95, SiO2: 0.15, H2O: 0.40}
+costos:
+  moneda: USD
+  por_tonelada_de: {corriente: Mineral, elemento: Cu}
+  electricidad_por_kwh: 0.08

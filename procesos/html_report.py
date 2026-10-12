@@ -20,6 +20,7 @@ from .report import (
     energy_balance,
     equilibrium_report,
     ew_report,
+    grinding_report,
     worst_closure,
 )
 
@@ -169,6 +170,23 @@ def _equilibrium(flowsheet: Flowsheet, solution: Solution) -> str:
     return "".join(parts)
 
 
+def _grinding(flowsheet: Flowsheet, solution: Solution) -> str:
+    parts = []
+    for name, mo in grinding_report(flowsheet, solution):
+        circ = (
+            ""
+            if mo.circulating_load is None
+            else f" · carga circulante <b>{_num(100 * mo.circulating_load, 1)} %</b>"
+        )
+        parts.append(
+            f"<h2>Molienda · {escape(name)}</h2><p>{_num(mo.solids_t_h, 1)} t/h de sólidos · "
+            f"F80 {_num(mo.f80_um, 0)} µm → P80 <b>{_num(mo.p80_um, 0)} µm</b> · Bond "
+            f"{_num(mo.bond_kwh_t, 2)} kWh/t · <b>{_num(mo.power_kw, 0)} kW</b> "
+            f"({escape(mo.power_basis)}){circ}</p>"
+        )
+    return "".join(parts)
+
+
 def _electrowinning(flowsheet: Flowsheet, solution: Solution) -> str:
     parts = []
     for name, ew in ew_report(flowsheet, solution):
@@ -251,7 +269,7 @@ def html_report(
 <h2>Corrientes</h2>{_streams(flowsheet, solution)}
 <h2>Balance por elemento</h2>{_elements(flowsheet, solution)}
 {_energy(flowsheet, solution)}{_equilibrium(flowsheet, solution)}
-{_electrowinning(flowsheet, solution)}{control}{cost_section}
+{_grinding(flowsheet, solution)}{_electrowinning(flowsheet, solution)}{control}{cost_section}
 <footer>Simulador implementado desde la literatura. Estado estacionario; los límites de cada
 modelo están en la documentación del proyecto.</footer>
 </main></body></html>

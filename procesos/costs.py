@@ -3,7 +3,7 @@
 - Reactivos: lo que entra por las alimentaciones, en t/h, por su precio por tonelada.
 - Energía: el calor de los calentadores, evaporadores y reactores isotérmicos. El que se agrega
   se cobra al precio del calor; el que se retira, al del frío. La electricidad de los equipos que
-  la consumen (electroobtención), al precio de la electricidad.
+  la consumen (electroobtención, molienda), al precio de la electricidad.
 - Un costo fijo por hora (mano de obra, mantención), si se da.
 
 La base «por tonelada» es el flujo total de una corriente, o el de un elemento contenido en ella
