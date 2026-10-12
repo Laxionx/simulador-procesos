@@ -13,7 +13,7 @@ from procesos.fusion import smelt
 from procesos.fusion_datos import BLENDS
 
 r = smelt(BLENDS["Mezcla 1"], matte_grade=63.7, slag_sio2=29.0, heat_loss_mj_t=205.5)
-r.oxygen_nm3_t, r.enrichment_pct, r.flux_pct   # 161,8 Nm³/t · 50,7 % · 6,79 %
+r.oxygen_nm3_t, r.enrichment_pct, r.flux_pct  # 161,8 Nm³/t · 50,7 % · 6,79 %
 ```
 
 `python ejemplos/fusion_atlantic_copper.py` corre las cuatro mezclas de la validación.
