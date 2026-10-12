@@ -245,7 +245,7 @@ def test_planta_yaml_con_balance_de_calor_y_errores():
     assert rows["Lixiviación"].duty == 0.0
     assert result.solution.streams["PLS"].temperature == pytest.approx(30.0)
     with pytest.raises(ValueError, match="Sin datos termodinámicos"):
-        Catalog([make_species("CuFeS2")], DEFAULT_THERMO)
+        Catalog([make_species("PbS")], DEFAULT_THERMO)  # galena: sin datos
     with pytest.raises(ValueError, match="fuera del rango"):
         _record("CaSO4", "s").enthalpy(2000.0)
     with pytest.raises(ValueError, match="temperatura o calor"):

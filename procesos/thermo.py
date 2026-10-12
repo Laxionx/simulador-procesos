@@ -103,7 +103,27 @@ class ConstantCp:
         return self.cp_value * (temp_k - T_REF) / 1000.0
 
 
-CpModel = Shomate | MaierKelley | ConstantCp
+@dataclass(frozen=True)
+class EnthalpyPolynomial:
+    """Forma del US Bureau of Mines (p. ej. RI 8305): h - h298 = a T + b T² + c/T + d en kcal/mol,
+    con la constante d de cada tramo incluyendo las transiciones anteriores."""
+
+    tmin: float
+    tmax: float
+    a: float
+    b: float = 0.0
+    c: float = 0.0
+    d: float = 0.0
+
+    def cp(self, temp_k: float) -> float:
+        return (self.a + 2 * self.b * temp_k - self.c / temp_k**2) * 4184.0
+
+    def dh(self, temp_k: float) -> float:
+        t = temp_k
+        return (self.a * t + self.b * t**2 + self.c / t + self.d) * 4.184
+
+
+CpModel = Shomate | MaierKelley | ConstantCp | EnthalpyPolynomial
 
 
 @dataclass(frozen=True)
@@ -184,6 +204,12 @@ class ThermoDatabase:
             raise KeyError(
                 f"Sin datos termodinámicos para {species.name} (fase {species.phase})"
             ) from None
+
+    def by_key(self, formula: str, phase: str) -> ThermoRecord:
+        try:
+            return self._records[(formula, phase)]
+        except KeyError:
+            raise KeyError(f"Sin datos termodinámicos para {formula} (fase {phase})") from None
 
     def missing(self, species: list[Species] | tuple[Species, ...]) -> list[str]:
         return [s.name for s in species if self.key(s) not in self._records]

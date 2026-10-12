@@ -206,4 +206,6 @@ _CODATA[("H2SO4", "aq")] = ThermoRecord(
     _h2so4_apparent(),
 )
 
-DEFAULT_THERMO = ThermoDatabase({**_NIST, **_USGS, **_CODATA, **_JANAF})
+from .thermo_piro import PIRO  # noqa: E402  (pirometalurgia del cobre, fase 4a)
+
+DEFAULT_THERMO = ThermoDatabase({**_NIST, **_USGS, **_CODATA, **_JANAF, **PIRO})
