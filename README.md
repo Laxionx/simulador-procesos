@@ -39,7 +39,7 @@ Planta: Lixiviación de óxidos de cobre
 
 Además, 3 plantas reales publicadas: la producción de Constancia (Hudbay), el ácido de lixiviación de Marimaca y los cátodos del plan minero de Puquios. Las tolerancias se fijaron antes de correr. Detalle y hallazgos en [docs/VALIDACION_PLANTAS_REALES.md](docs/VALIDACION_PLANTAS_REALES.md).
 
-467 pruebas (más 41 fallos esperados: redondeos de la fuente, los límites de los modelos de actividad, la conductividad del electrolito, el del vapor ideal, la discrepancia JANAF-USGS del FeO, lo que el horno flash no alcanza, la carga de convertidor publicada que no cierra y el voltaje de refinación frente al compendio IsaKidd), cobertura del 97 % y ruff limpio:
+479 pruebas (más 41 fallos esperados: redondeos de la fuente, los límites de los modelos de actividad, la conductividad del electrolito, el del vapor ideal, la discrepancia JANAF-USGS del FeO, lo que el horno flash no alcanza, la carga de convertidor publicada que no cierra y el voltaje de refinación frente al compendio IsaKidd), cobertura del 97 % y ruff limpio:
 
 ```bash
 python -m pytest --cov=procesos
@@ -158,6 +158,14 @@ Ver [docs/er.md](docs/er.md).
 - Balance de masa sin calor. `python ejemplos/estano_funsur.py` corre el caso Funsur 2025 (ilustrativo: la ganga del concentrado no se publica).
 
 Ver [docs/estano.md](docs/estano.md).
+
+## Cadena de concentrado a cátodo
+
+`procesos.cadena.concentrate_to_cathode` lleva una tonelada de concentrado por la fusión flash, el convertidor, el horno de ánodos y la refinación. Cu y S cierran de punta a punta (1e-15).
+- Con la mezcla 1 de Atlantic Copper llega a los cátodos el 95,8 % del Cu, sin recircular escorias. Da 0,875 t de ácido potencial por t de concentrado, coherente con las 0,94-1,00 de la fundición de Ilo (10-K 2025).
+- `python ejemplos/cadena_atlantic.py`.
+
+Ver [docs/cadena.md](docs/cadena.md).
 
 ## Reporte HTML y costo operativo (fase 4)
 

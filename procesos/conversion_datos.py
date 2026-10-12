@@ -99,3 +99,12 @@ FLINFLON_EFFICIENCY = {  # Tabla IV-XII: soplados a escoria y a cobre (%)
 # ---------------------------------------------------------------- Ilo (Morales et al. 2004)
 ILO_SLAG = {"Cu": 2.85, "Fe": 46.48, "SiO2": 25.52, "Fe3O4": 16.46}  # promedio, Tabla I
 ILO_MAGNETITE_FE = ILO_SLAG["Fe3O4"] * 3 * 55.845 / 231.533 / ILO_SLAG["Fe"]  # 0,256
+
+# ---------------------------------------------------------------- Ilo, fundición (10-K 2025)
+# Southern Copper, Form 10-K 2025, tabla de la fundición de Ilo: concentrado fundido (kt),
+# recuperación media de Cu (%), ánodos (kt), ley de los ánodos (%), ácido sulfúrico (kt).
+ILO_10K = {
+    2025: (1_040.7, 97.4, 305.2, 99.78, 976.5),
+    2024: (1_230.9, 97.1, 359.4, 99.78, 1_185.0),
+    2023: (1_292.9, 97.1, 362.9, 99.78, 1_286.8),
+}
