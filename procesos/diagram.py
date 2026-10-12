@@ -27,6 +27,7 @@ KIND = {
     "SolventExtraction": "extracción SX",
     "Electrowinning": "electroobtención",
     "Grinding": "molienda",
+    "Flotation": "flotación cinética",
 }
 
 

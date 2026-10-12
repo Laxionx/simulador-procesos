@@ -13,6 +13,7 @@ from .control import Controller, Goal, Manipulated
 from .costs import CostSpec
 from .equilibrium import EquilibriumReactor, database_path
 from .ew import CONTACTS_V, GAP_M, Electrowinning
+from .flotacion import Flotation
 from .flowsheet import Flowsheet
 from .molienda import Grinding, template
 from .reactions import Reaction, parse_equation
@@ -163,6 +164,26 @@ def _unit(data: Any, index: int) -> Unit:
                 metal=str(data.get("metal", "Cu")),
                 oxygen=str(data.get("oxigeno", "O2")),
             )
+        if kind == "flotacion":
+            kinetics = _require(data, "cinetica", where)
+            if not isinstance(kinetics, Mapping):
+                raise PlantFileError(f"{where}.cinetica: mapa especie -> {{r_inf, k}}")
+            tau, volume = data.get("tiempo_residencia_min"), data.get("volumen_celda_m3")
+            return Flotation(
+                name,
+                inputs,
+                outputs,
+                {str(n): (float(v["r_inf"]), float(v["k"])) for n, v in kinetics.items()},
+                int(_require(data, "celdas", where)),
+                str(data.get("modelo", "primer_orden")),
+                None if tau is None else float(tau),
+                None if volume is None else float(volume),
+                float(data.get("fraccion_aire", 0.15)),
+                float(data.get("densidad_solidos", 2.7)),
+                float(data.get("factor_escalamiento", 1.0)),
+                {str(k): float(v) for k, v in (data.get("recuperaciones") or {}).items()},
+                float(data.get("por_defecto", 0.0)),
+            )
         if kind == "molienda":
             circuit = data.get("circuito")
             f80, p80 = data.get("f80"), data.get("p80")
@@ -191,12 +212,19 @@ def _unit(data: Any, index: int) -> Unit:
                 None if temperature is None else float(temperature),
                 None if duty is None else float(duty),
             )
-    except (TypeError, ValueError, AttributeError, FileNotFoundError, ImportError) as error:
+    except (
+        TypeError,
+        ValueError,
+        AttributeError,
+        KeyError,
+        FileNotFoundError,
+        ImportError,
+    ) as error:
         raise PlantFileError(f"{where}: {error}") from error
     raise PlantFileError(
         f"{where}: tipo desconocido {kind!r} "
         "(mezclador, divisor, separador, reactor, calentador, equilibrio, evaporador, "
-        "extraccion_solventes, despojo, electroobtencion, molienda)"
+        "extraccion_solventes, despojo, electroobtencion, molienda, flotacion)"
     )
 
 

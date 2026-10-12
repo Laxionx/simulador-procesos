@@ -2,7 +2,7 @@
 
 Simulador de procesos metalúrgicos implementado **desde la literatura**: balance de masa y de calor de plantas con reacciones químicas, equilibrio acuoso, reciclos y lazos de control. Es independiente de cualquier software comercial.
 
-**Fases 1 a 4 (esta versión):** balance de masa y de calor en estado estacionario, equilibrio químico acuoso con PHREEQC, extracción por solventes y electroobtención de cobre, molienda conectada a simulador-conminucion, y reporte HTML con diagrama de flujo y costo operativo.
+**Fases 1 a 4 (esta versión):** balance de masa y de calor en estado estacionario, equilibrio químico acuoso con PHREEQC, extracción por solventes y electroobtención de cobre, molienda conectada a simulador-conminucion, flotación cinética, y reporte HTML con diagrama de flujo y costo operativo.
 
 ```bash
 pip install -e .
@@ -39,7 +39,7 @@ Planta: Lixiviación de óxidos de cobre
 
 Además, 3 plantas reales publicadas: la producción de Constancia (Hudbay), el ácido de lixiviación de Marimaca y los cátodos del plan minero de Puquios. Las tolerancias se fijaron antes de correr. Detalle y hallazgos en [docs/VALIDACION_PLANTAS_REALES.md](docs/VALIDACION_PLANTAS_REALES.md).
 
-319 pruebas (más 23 fallos esperados: redondeos de la fuente, los límites de los modelos de actividad, la conductividad del electrolito y el del vapor ideal), cobertura del 97 % y ruff limpio:
+341 pruebas (más 23 fallos esperados: redondeos de la fuente, los límites de los modelos de actividad, la conductividad del electrolito y el del vapor ideal), cobertura del 97 % y ruff limpio:
 
 ```bash
 python -m pytest --cov=procesos
@@ -99,6 +99,14 @@ Ver [docs/ew.md](docs/ew.md).
 python -m procesos resolver ejemplos/sx_ew_circuito.yaml
 ```
 
+## Flotación cinética
+
+El equipo `flotacion` reemplaza la recuperación fija por cinética de primer orden por especie (constante única o distribución rectangular de Klimpel) en un banco de celdas en serie. `python -m procesos ajustar` ajusta la cinética a una prueba batch o al perfil de un banco.
+- Validado con los bancos rougher industriales de Los Pelambres (Vinnett et al. 2022, acceso abierto). Con sus parámetros reproduce sus recuperaciones modeladas a 0,4 puntos o menos. Ajustando sus recuperaciones medidas obtiene sus parámetros: R∞ a 0,1 puntos y k a 1,3 % o menos.
+- **No validado:** la predicción de laboratorio a planta. En cuatro plantas chilenas, el factor de escalamiento fue de 0,8 a 15,7 (Vallejos 2023), así que se calibra con la planta.
+
+Ver [docs/flotacion.md](docs/flotacion.md).
+
 ## Molienda conectada a simulador-conminucion
 
 El equipo `molienda` llama al proyecto hermano [simulador-conminucion](https://github.com/Laxionx/simulador-conminucion) (extra opcional: `pip install -e ".[molienda]"`). No cambia la composición: entrega el P80, la carga circulante y la potencia, que entra al costo como electricidad.
@@ -134,7 +142,7 @@ Ver [docs/reporte-y-costos.md](docs/reporte-y-costos.md).
 - Sin `balance_de_calor`, la temperatura se transporta sin balancear: el mezclador la promedia por masa.
 - El balance de calor ya incluye el calor de dilución del H2SO4 (Wu y Young 1980; NBS 1982) y la evaporación del agua (IAPWS-IF97). El vapor se trata como ideal, así que a varios bar el error pasa del 1,8 %, y no se modela la subida del punto de ebullición (ver [docs/balance-de-calor.md](docs/balance-de-calor.md)).
 - La presión se transporta pero no se balancea.
-- Los separadores usan recuperaciones fijas. La molienda se conecta con el proyecto hermano `simulador-conminucion` (ver arriba); la granulometría no viaja a los equipos siguientes.
+- Los separadores usan recuperaciones fijas; para flotación hay un modelo cinético (ver arriba). La molienda se conecta con el proyecto hermano `simulador-conminucion` (ver arriba); la granulometría no viaja a los equipos siguientes.
 
 ## Licencia
 

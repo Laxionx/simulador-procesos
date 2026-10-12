@@ -20,6 +20,7 @@ from .report import (
     energy_balance,
     equilibrium_report,
     ew_report,
+    flotation_report,
     grinding_report,
     worst_closure,
 )
@@ -170,6 +171,20 @@ def _equilibrium(flowsheet: Flowsheet, solution: Solution) -> str:
     return "".join(parts)
 
 
+def _flotation(flowsheet: Flowsheet, solution: Solution) -> str:
+    parts = []
+    for name, fl in flotation_report(flowsheet, solution):
+        rows = [
+            f"<tr><td>{escape(s)}</td>{_cell(100 * r, 2)}</tr>" for s, r in fl.recoveries.items()
+        ]
+        parts.append(
+            f"<h2>Flotación · {escape(name)}</h2><p>{fl.cells} celdas de "
+            f"<b>{_num(fl.tau_min, 2)} min</b></p>"
+            + _table(["Especie", "Recuperación al concentrado (%)"], rows)
+        )
+    return "".join(parts)
+
+
 def _grinding(flowsheet: Flowsheet, solution: Solution) -> str:
     parts = []
     for name, mo in grinding_report(flowsheet, solution):
@@ -269,7 +284,8 @@ def html_report(
 <h2>Corrientes</h2>{_streams(flowsheet, solution)}
 <h2>Balance por elemento</h2>{_elements(flowsheet, solution)}
 {_energy(flowsheet, solution)}{_equilibrium(flowsheet, solution)}
-{_grinding(flowsheet, solution)}{_electrowinning(flowsheet, solution)}{control}{cost_section}
+{_grinding(flowsheet, solution)}{_flotation(flowsheet, solution)}
+{_electrowinning(flowsheet, solution)}{control}{cost_section}
 <footer>Simulador implementado desde la literatura. Estado estacionario; los límites de cada
 modelo están en la documentación del proyecto.</footer>
 </main></body></html>

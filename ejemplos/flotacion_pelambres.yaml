@@ -1,0 +1,25 @@
+# Banco rougher A de Minera Los Pelambres con flotación cinética. Datos de Vinnett et al. (2022,
+# Physicochem. Probl. Miner. Process. 58(5), 152420, acceso abierto): ~600 t/h de mineral con
+# 0,86 % de Cu, 9 celdas Wemco de 130 m³, τ medido de 4,1 min por celda, y la cinética del Cu
+# ajustada con mezcla perfecta y constante única (R∞ = 94,0 %, k = 0,35 1/min). El Cu va como
+# CuFeS2. Supuestos que NO vienen del artículo: 35 % de sólidos y las recuperaciones fijas de la
+# ganga (5 %) y del agua (10 %). El banco recupera 94,0 % del Cu; en planta se midió 94,7 %.
+# Ver docs/flotacion.md.
+nombre: Banco rougher A de Los Pelambres
+especies:
+  - {nombre: CuFeS2, fase: s}
+  - {nombre: SiO2, fase: s}
+  - {nombre: H2O, fase: l}
+alimentaciones:
+  Alimentacion rougher: {flujos: {CuFeS2: 14900.0, SiO2: 585100.0, H2O: 1114000.0}}
+equipos:
+  - tipo: flotacion
+    nombre: Rougher A
+    entradas: [Alimentacion rougher]
+    salidas: [Concentrado rougher, Relave rougher]
+    celdas: 9
+    tiempo_residencia_min: 4.1     # por celda, medido con trazador
+    modelo: primer_orden
+    cinetica:
+      CuFeS2: {r_inf: 0.94, k: 0.35}
+    recuperaciones: {SiO2: 0.05, H2O: 0.10}   # supuestos, no medidos
