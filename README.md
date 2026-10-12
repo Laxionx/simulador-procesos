@@ -2,7 +2,7 @@
 
 Simulador de procesos metalúrgicos implementado **desde la literatura**: balance de masa y de calor de plantas con reacciones químicas, equilibrio acuoso, reciclos y lazos de control. Es independiente de cualquier software comercial.
 
-**Fases 1 a 4 (esta versión):** balance de masa y de calor en estado estacionario, equilibrio químico acuoso con PHREEQC, extracción por solventes y electroobtención de cobre, molienda conectada a simulador-conminucion, flotación cinética, fusión flash y conversión Peirce-Smith de cobre (balance de masa y de calor), horno de ánodos, electrorrefinación con purga y celdas liberadoras, y reporte HTML con diagrama de flujo y costo operativo.
+**Fases 1 a 4 (esta versión):** balance de masa y de calor en estado estacionario, equilibrio químico acuoso con PHREEQC, extracción por solventes y electroobtención de cobre, molienda conectada a simulador-conminucion, flotación cinética, fusión flash y conversión Peirce-Smith de cobre (balance de masa y de calor), horno de ánodos, electrorrefinación con purga y celdas liberadoras, fundición de estaño en dos etapas, y reporte HTML con diagrama de flujo y costo operativo.
 
 ```bash
 pip install -e .
@@ -39,7 +39,7 @@ Planta: Lixiviación de óxidos de cobre
 
 Además, 3 plantas reales publicadas: la producción de Constancia (Hudbay), el ácido de lixiviación de Marimaca y los cátodos del plan minero de Puquios. Las tolerancias se fijaron antes de correr. Detalle y hallazgos en [docs/VALIDACION_PLANTAS_REALES.md](docs/VALIDACION_PLANTAS_REALES.md).
 
-450 pruebas (más 41 fallos esperados: redondeos de la fuente, los límites de los modelos de actividad, la conductividad del electrolito, el del vapor ideal, la discrepancia JANAF-USGS del FeO, lo que el horno flash no alcanza, la carga de convertidor publicada que no cierra y el voltaje de refinación frente al compendio IsaKidd), cobertura del 97 % y ruff limpio:
+467 pruebas (más 41 fallos esperados: redondeos de la fuente, los límites de los modelos de actividad, la conductividad del electrolito, el del vapor ideal, la discrepancia JANAF-USGS del FeO, lo que el horno flash no alcanza, la carga de convertidor publicada que no cierra y el voltaje de refinación frente al compendio IsaKidd), cobertura del 97 % y ruff limpio:
 
 ```bash
 python -m pytest --cov=procesos
@@ -150,6 +150,15 @@ El equipo `electrorrefinacion` recibe ánodos y electrolito y da cátodos (Farad
 
 Ver [docs/er.md](docs/er.md).
 
+## Fundición de estaño en dos etapas (fase 4d)
+
+`procesos.estano.smelt_tin` hace el balance de masa de una fundición de estaño como la de Funsur. Hay dos etapas: la fusión del concentrado da estaño crudo y una escoria rica, y la reducción de la escoria da hardhead y escoria de desecho. El hardhead y los humos se reciclan. El reparto Sn/Fe sigue el coeficiente de distribución D de la reacción SnO + Fe = Sn + FeO.
+- Los D de la literatura (150-400 en la fusión y 20-50 en la reducción, Kandalam et al. 2023) se sostienen frente a 81 equilibrios medidos (Takeda et al. 1990): medianas de 166 y 35, pero con mucha dispersión, y D sube con la basicidad.
+- Funsur 2022-2025 (Memoria Integrada 2025 de Minsur): la recuperación calculada con el Sn que entra y el refinado queda 0,6-0,7 puntos bajo la reportada, los cuatro años. Con la ganga supuesta, la escoria de desecho al 0,55 % explica solo una cuarta parte de la pérdida.
+- Balance de masa sin calor. `python ejemplos/estano_funsur.py` corre el caso Funsur 2025 (ilustrativo: la ganga del concentrado no se publica).
+
+Ver [docs/estano.md](docs/estano.md).
+
 ## Reporte HTML y costo operativo (fase 4)
 
 ```bash
@@ -173,7 +182,7 @@ Ver [docs/reporte-y-costos.md](docs/reporte-y-costos.md).
 | 4a ✅ | Pirometalurgia: fusión flash de cobre, balance de masa y de calor (datos públicos USGS, JANAF, USBM) |
 | 4b ✅ | Conversión Peirce-Smith y horno de ánodos (este último sin validar contra planta) |
 | 4c ✅ | Electrorrefinación con purga de Ni y celdas liberadoras; conductividad validada, voltaje y reparto de impurezas no |
-| 4d | Pendiente: fundición de estaño |
+| 4d ✅ | Fundición de estaño en dos etapas: balance de masa con D de literatura, contrastado con equilibrios medidos y coherente con Funsur |
 
 ## Límites de esta versión
 
