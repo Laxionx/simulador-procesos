@@ -168,6 +168,17 @@ Ver [docs/estano.md](docs/estano.md).
 
 Ver [docs/cadena.md](docs/cadena.md).
 
+## App Planta completa
+
+App Streamlit didáctica: equipos metalúrgicos animados según su cálculo real (flotación en serie y celda de electroobtención), con una guía del recorrido del concentrado al cátodo. Las burbujas, la espuma y el depósito de cobre se dibujan con los números de `procesos.flotacion` y `procesos.ew`.
+
+```bash
+pip install -e ".[app]"
+streamlit run app/streamlit_app.py
+```
+
+Para la nube basta `requirements.txt` (versiones fijas). Los datos de entrada y la tabla «Qué datos necesita» salen de una sola definición, `app/controles.py`.
+
 ## Reporte HTML y costo operativo (fase 4)
 
 ```bash

@@ -1,0 +1,28 @@
+# Configuración para la app pública (Streamlit Community Cloud). La app no sube archivos, no usa
+# secretos y todos sus controles tienen límites.
+
+[client]
+# Sin trazas ni rutas internas en el navegador: solo un mensaje genérico.
+showErrorDetails = "none"
+# Oculta las opciones de desarrollador (rerun, clear cache, deploy) a los visitantes.
+toolbarMode = "viewer"
+
+[server]
+# La app no recibe archivos.
+maxUploadSize = 1
+enableXsrfProtection = true
+runOnSave = false
+
+[browser]
+gatherUsageStats = false
+
+[theme]
+# Cuaderno de planta: papel cálido, tinta oscura, terracota de acento (el color de los gruesos
+# que vuelven al molino). Títulos con serifa, texto sin serifa.
+base = "light"
+primaryColor = "#C0462B"
+backgroundColor = "#FBF9F4"
+secondaryBackgroundColor = "#EFE9DD"
+textColor = "#1F2A30"
+font = "sans-serif"
+headingFont = "serif"
