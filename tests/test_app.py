@@ -18,19 +18,23 @@ from guia import markdown_table  # noqa: E402
 
 
 def _widgets(at: AppTest) -> list:
-    return [*at.sidebar.number_input, *at.sidebar.slider]
+    return [*at.sidebar.number_input, *at.sidebar.slider, *at.sidebar.selectbox]
 
 
 def test_las_pestanas_cargan_sin_excepciones():
     at = AppTest.from_file(APP, default_timeout=120).run()
     assert not at.exception
     assert not at.error
-    assert [t.label for t in at.tabs] == ["Guía", "Flotación", "Electroobtención"]
+    assert [t.label for t in at.tabs] == [
+        "Guía", "Flotación", "Horno flash", "Convertidor", "Electroobtención"
+    ]  # fmt: skip
     labels = [m.label for m in at.metric]
     assert "Recuperación de Cu (CuFeS₂)" in labels and "Voltaje de celda" in labels
     values = {m.label: m.value for m in at.metric}
     assert values["Recuperación de Cu (CuFeS₂)"] == "94,0 %"
     assert values["Voltaje de celda"] == "2,18 V"
+    assert values["O₂ técnico (Nm³/t)"] == "161,8"  # horno flash, mezcla 1
+    assert values["Fundente (t)"] == "6,6"  # convertidor, ejemplo de Ilo
 
 
 def test_los_controles_salen_de_la_misma_definicion_que_la_tabla():
@@ -39,7 +43,10 @@ def test_los_controles_salen_de_la_misma_definicion_que_la_tabla():
     assert set(widgets) == {controles.PREFIX + d.key for d in controles.DATOS}
     for d in controles.DATOS:  # el widget de la barra lateral es lo que dice la definición
         w = widgets[controles.PREFIX + d.key]
-        assert (w.min, w.max, w.value) == (d.lo, d.hi, d.default), d.key
+        if d.widget == "select":
+            assert (len(w.options), w.value) == (d.hi - d.lo + 1, d.default), d.key
+        else:
+            assert (w.min, w.max, w.value) == (d.lo, d.hi, d.default), d.key
     table = controles.data_table()
     assert len(table) == len(controles.DATOS)
     assert list(table["Dato"]) == [d.label for d in controles.DATOS]
@@ -64,7 +71,10 @@ def test_markdown_table_escapa_barras():
 def test_controles_en_los_extremos_no_tumban_la_app(extreme):
     at = AppTest.from_file(APP, default_timeout=120).run()
     for w in _widgets(at):
-        w.set_value(w.min if extreme == "min" else w.max)
+        if w in at.sidebar.selectbox:
+            w.set_value(1 if extreme == "min" else 4)
+        else:
+            w.set_value(w.min if extreme == "min" else w.max)
     at.run()
     assert not at.exception
 
@@ -97,3 +107,24 @@ def test_un_fallo_del_modelo_se_muestra_sin_traza(monkeypatch):
     at = AppTest.from_file(APP, default_timeout=120).run()
     assert not at.exception
     assert any("composición fuera de rango" in e.value for e in at.error)
+
+
+@pytest.mark.parametrize("blend", [1, 2, 3, 4])
+def test_las_cuatro_mezclas_del_horno_cargan(blend):
+    at = AppTest.from_file(APP, default_timeout=120).run()
+    at.sidebar.selectbox[0].set_value(blend).run()
+    assert not at.exception and not at.error
+    assert any(m.label == "Mata (kg/t de concentrado)" for m in at.metric)
+
+
+def test_un_fallo_del_horno_o_del_convertidor_se_muestra_sin_traza(monkeypatch):
+    import calculo_piro
+
+    def fails(params):
+        raise ValueError("Balance imposible con esas metas")
+
+    monkeypatch.setattr(calculo_piro, "run_flash", fails)
+    monkeypatch.setattr(calculo_piro, "run_converter", fails)
+    at = AppTest.from_file(APP, default_timeout=120).run()
+    assert not at.exception
+    assert sum("Balance imposible" in e.value for e in at.error) == 2

@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import plotly.graph_objects as go
 from calculo import MEASURED_CELLS, MEASURED_CU_PCT, EWView, FlotationView
+from calculo_piro import ConverterView
 from dibujo import BRONZE, COPPER, INK, PAPER, STEEL, es
 
 FONT = dict(family="Segoe UI, Helvetica, Arial, sans-serif", color=INK, size=13)
@@ -66,3 +67,42 @@ def voltage_figure(view: EWView) -> go.Figure:
     return _layout(fig, "De qué se compone el voltaje de la celda", 260,
                    x=dict(title="Voltaje (V)", range=[0, view.result.cell_voltage * 1.02]),
                    y=dict(showticklabels=False))  # fmt: skip
+
+
+def converter_balance_rows(view: ConverterView) -> list[tuple[str, str, float]]:
+    """(soplado, concepto, t) de lo que entra y sale de cada soplado, con el O₂ que reacciona:
+    entra = sale por masa."""
+    carga, fin_escoria, fin_cobre = view.states
+    return [
+        ("Soplado a escoria", "entra: mata", carga.lower_t),
+        ("Soplado a escoria", "entra: fundente", view.flux_t),
+        ("Soplado a escoria", "entra: O₂ que reacciona", fin_escoria.o2_t),
+        ("Soplado a escoria", "sale: metal blanco", fin_escoria.lower_t),
+        ("Soplado a escoria", "sale: escoria", fin_escoria.slag_t),
+        ("Soplado a escoria", "sale: SO₂", fin_escoria.so2_t),
+        ("Soplado a cobre", "entra: metal blanco", fin_escoria.lower_t),
+        ("Soplado a cobre", "entra: O₂ que reacciona", fin_cobre.o2_t),
+        ("Soplado a cobre", "sale: blíster", fin_cobre.lower_t),
+        ("Soplado a cobre", "sale: escoria", fin_cobre.slag_t),
+        ("Soplado a cobre", "sale: SO₂", fin_cobre.so2_t),
+    ]
+
+
+def converter_figure(view: ConverterView) -> go.Figure:
+    """Barras apiladas por soplado: lo que entra y lo que sale, en t (cierran por masa)."""
+    rows = converter_balance_rows(view)
+    colors = ["#8C5A2B", "#8E979C", "#3B82A6", "#B7791F", "#4F5F69", "#B8B0A0", "#C0462B"]
+    concepts = list(dict.fromkeys(c for _, c, _ in rows))
+    fig = go.Figure()
+    for n, concept in enumerate(concepts):
+        bars = [(stage, t) for stage, c, t in rows if c == concept]
+        side = concept.split(":")[0]
+        fig.add_trace(go.Bar(
+            x=[f"{stage} ({side})" for stage, _ in bars], y=[t for _, t in bars],
+            name=concept,
+            marker=dict(color=colors[n % len(colors)]),
+            text=[es(t, 1) for _, t in bars], textposition="inside",
+        ))  # fmt: skip
+    fig.update_layout(barmode="stack")
+    return _layout(fig, "Qué entra y qué sale de cada soplado (t)", 420,
+                   x=dict(title=""), y=dict(title="Toneladas por 100 t de mata"))  # fmt: skip

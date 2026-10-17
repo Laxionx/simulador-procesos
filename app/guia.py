@@ -7,7 +7,7 @@ import textwrap
 
 import pandas as pd
 import streamlit as st
-from controles import EW, FLOT, data_table
+from controles import CONV, EW, FLASH, FLOT, data_table
 from dibujo import BRONZE, INK, PAPER, STEEL, as_images, svg, text
 
 REPO = "https://github.com/Laxionx/simulador-procesos"
@@ -18,8 +18,8 @@ ANIMADO, OTRA, PROXIMO, REPO_ONLY = "animado", "otra app", "próximamente", "en 
 RUTA_PIRO = (
     ("Molienda", OTRA),
     ("Flotación", ANIMADO),
-    ("Fusión flash", PROXIMO),
-    ("Conversión", PROXIMO),
+    ("Fusión flash", ANIMADO),
+    ("Conversión", ANIMADO),
     ("Ánodos", REPO_ONLY),
     ("Electrorrefinación", REPO_ONLY),
 )
@@ -64,10 +64,46 @@ FICHAS = {
     },
 }
 
+FICHAS[FLASH] = {
+    "hace": "Funde el concentrado seco en el aire enriquecido con oxígeno que cae por la torre de "
+    "reacción: el hierro y el azufre se oxidan, el calor de la reacción funde la carga y en el "
+    "asentador se separan la mata (Cu₂S-FeS, abajo) y la escoria (encima). El azufre sale como "
+    "SO₂.",
+    "entra": "Una de las cuatro mezclas de concentrado de Atlantic Copper (Huelva), con metas "
+    "de ley de mata, SiO₂ de la escoria y pérdida térmica; el modelo calcula el oxígeno, el "
+    "enriquecimiento del aire y el fundente.",
+    "sale": "Por tonelada de concentrado: kg de mata, de escoria y de SO₂, Nm³ de O₂ técnico, "
+    "% de O₂ del aire y % de fundente. Del dibujo: volumen de cada capa (kg ÷ densidad).",
+    "autores": "Balance de masa y de calor con el esquema de Bacedoni, Moreno-Ventas y Ríos "
+    "(2020), *Metals* 10(9) 1229 (mineralogía, reparto de Cu y Zn, operación industrial); "
+    "contenido calórico de matas: González, Patiño y Salinas (2001), *Rev. Soc. Quím. Méx.* "
+    "45(1) 13. Densidades, solo para dibujar: Cu₂S 5,18 y FeS 3,80 g/cm³ (Nagamori, 1968, "
+    "citado en Tesfaye Firdu y Taskinen, 2010, Aalto TKK-MT-215, Tabla 9), mezcla ideal para la "
+    "mata (±10 %), escoria 3,7 g/cm³ (aprox.).",
+    "doc": "docs/fusion.md",
+}
+FICHAS[CONV] = {
+    "hace": "Convierte la mata en cobre soplando aire por las toberas. Primero el soplado a "
+    "escoria oxida el hierro (con fundente de sílice forma la escoria) y deja metal blanco "
+    "(Cu₂S); luego el soplado a cobre oxida el azufre y deja cobre blíster. Los dos sueltan SO₂.",
+    "entra": "100 t de mata por carga, con su ley, y la eficiencia con que cada soplado "
+    "aprovecha el oxígeno. El ejemplo usa parámetros públicos de Ilo (ilustrativo).",
+    "sale": "Por soplado: aire (Nm³), fundente, escoria, metal blanco o blíster y SO₂ (t). Del "
+    "dibujo: el volumen de cada fase (t ÷ densidad) en tres estados del baño.",
+    "autores": "Balance por elemento y de calor de cada soplado, con datos de Lennartsson (2013, "
+    "tesis, Luleå), Kyllo (1995, tesis, UBC; eficiencias de Flin Flon) y Morales, Palacios y "
+    "Sánchez (2004, Molten Slags VII; escoria de Ilo). Densidades, solo para dibujar: mata y "
+    "metal blanco por mezcla ideal Cu₂S-FeS (Nagamori, 1968; ±10 %), blíster = cobre líquido "
+    "(Assael et al., 2010, *J. Phys. Chem. Ref. Data* 39, 033105, ec. 1), escoria 3,7 g/cm³ "
+    "(aprox.; la del convertidor, con magnetita, es más densa).",
+    "doc": "docs/conversion.md",
+}
+
 LIMITES = (
     "Estado estacionario: el banco y la celda no cambian en el tiempo.",
     "La alimentación de la flotación es fija (la del ejemplo de Los Pelambres); se cambian la "
-    "cinética y la operación del banco.",
+    "cinética y la operación del banco. El horno flash funde las cuatro mezclas publicadas y el "
+    "convertidor procesa 100 t de mata por carga.",
     "La celda de electroobtención se calcula para un cátodo con electrolito de composición "
     "fija; el depósito crece de forma pareja (sin nódulos ni dendritas).",
     "Las animaciones son esquemas: la posición de burbujas, el arrastre de la ganga, las "
@@ -92,9 +128,12 @@ def _box(x: int, y: int, name: str, state: str) -> str:
         fill, stroke, color = BRONZE, INK, "#FFFFFF"
     elif state == PROXIMO:
         dash = ' stroke-dasharray="6 4"'
-    lines = textwrap.wrap(name, 14)
+    lines = textwrap.wrap(name, 18)
+    size = 12 if max(len(ln) for ln in lines) > 14 else 13
     label = "".join(
-        text(x + 55, y + (31 if len(lines) == 1 else 24 + 16 * n), line, 13, "middle", color=color)
+        text(
+            x + 55, y + (31 if len(lines) == 1 else 24 + 16 * n), line, size, "middle", color=color
+        )
         for n, line in enumerate(lines)
     )
     return (
@@ -126,8 +165,9 @@ def route_map() -> str:
         body += _box(xi, y_hydro, name, state)
         body += _arrow(xi + 110, xi + step, y_hydro + 27)
     body += _box(x0 + len(RUTA_HIDRO) * step, y_hydro, "Cátodo de Cu", REPO_ONLY)
-    body += text(20, 335, "Mapa estático, sin números. Bronce: animado en esta app. Línea "
-                 "punteada: próximamente.", 12, color=STEEL)  # fmt: skip
+    body += text(
+        20, 335, "Mapa estático, sin números. Bronce: animado en esta app.", 12, color=STEEL
+    )
     return svg(1000, 350, body, True, "Mapa del recorrido del concentrado al cátodo de cobre")
 
 
@@ -157,11 +197,11 @@ def guide_tab() -> None:
     st.markdown("### El recorrido del concentrado al cátodo")
     st.html(as_images(route_map(), route_map(), "Mapa del recorrido al cátodo de cobre"))
     st.markdown(
-        "- **Animados aquí:** Flotación y Electroobtención (pestañas de arriba).\n"
+        "- **Animados aquí:** Flotación, Horno flash, Convertidor y Electroobtención "
+        "(pestañas de arriba).\n"
         f"- **Molienda:** tiene su propia app animada, [simulador de conminución]({CONMINUCION}).\n"
-        "- **Próximamente en esta app:** fusión flash y conversión.\n"
-        "- **En el simulador, sin animación todavía:** ánodos, electrorrefinación, lixiviación "
-        f"y extracción por solventes (en el [repositorio]({REPO}))."
+        "- **En el simulador, sin animación todavía:** horno de ánodos, electrorrefinación, "
+        f"lixiviación y extracción por solventes (en el [repositorio]({REPO}))."
     )
     st.markdown("### Cómo leer un esquema")
     st.markdown(

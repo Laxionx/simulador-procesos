@@ -97,3 +97,23 @@ RISE_CSS = (
     "@keyframes pc-rise{from{transform:translateY(0)}to{transform:translateY(calc(-1*var(--d)))}}"
     f"{R}.pc-rise{{animation:pc-rise linear infinite}}"
 )
+
+
+DASH = 36.0  # px que avanza el trazo de un flujo en un ciclo
+DASH_CSS = (
+    f"@keyframes pc-run{{to{{stroke-dashoffset:-{DASH:g}}}}}"
+    f"{R}.pc-dash{{animation:pc-run linear infinite}}"
+)
+
+
+def flow(d: str, width: float, color: str, speed_px_s: float, paused: bool) -> str:
+    """Flujo dibujado como trazo grueso (`width`) con rayitas que avanzan a `speed_px_s`."""
+    w = max(width, 1.0)
+    base = (f'<path d="{d}" fill="none" stroke="{color}" stroke-width="{w:.2f}" '
+            f'stroke-linecap="round"/>')  # fmt: skip
+    dur = "" if paused else f' style="animation-duration:{DASH / max(speed_px_s, 1.0):.4f}s"'
+    dashes = (
+        f'<path class="pc-dash" d="{d}" fill="none" stroke="#FFFFFF" stroke-opacity=".6" '
+        f'stroke-width="{max(w / 3, 1.2):.2f}" stroke-dasharray="6 {DASH - 6:g}"{dur}/>'
+    )
+    return base + dashes
