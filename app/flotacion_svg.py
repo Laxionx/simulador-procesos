@@ -1,12 +1,15 @@
 """Esquema animado del banco de flotación: N celdas en serie.
 
-Lo que sale del cálculo: el número de celdas; el ritmo de las burbujas cargadas de Cu (cada
-celda recibe BUBBLE_RATE_PER_K × k burbujas por segundo); y el grosor de la espuma de cada celda
+Lo que sale del cálculo: el número de celdas; el ritmo de subida de las burbujas (BUBBLE_RATE_PER_K
+× k burbujas por segundo en cada celda); cuántas de ellas llevan CuFeS₂ (proporcional a los t/h
+de CuFeS₂ que esa celda manda al concentrado); y el grosor de la espuma de cada celda
 (proporcional a los t/h de sólidos que esa celda manda al concentrado). Lo ilustrativo, y así se
 rotula: la posición de las burbujas, el arrastre de la ganga (ritmo fijo) y el tamaño de la celda.
 """
 
 from __future__ import annotations
+
+import math
 
 from calculo import FlotationView
 from dibujo import (
@@ -53,12 +56,23 @@ def froth_heights(view: FlotationView) -> list[tuple[float, float]]:
     return [(c * scale, g * scale) for c, g in zip(view.cu_t_h, view.gangue_t_h, strict=True)]
 
 
-def _bubble(loaded: bool) -> str:
+def loaded_counts(view: FlotationView) -> list[int]:
+    """Burbujas con partícula de CuFeS₂ de cada celda: proporcionales a los t/h de CuFeS₂ que
+    esa celda manda al concentrado, normalizados a la celda con más (que lleva todas las
+    burbujas del dibujo). Redondeo al entero más cercano (mitad hacia arriba); las demás suben
+    vacías. En primer orden, lo que flota en una celda es k × el Cu que queda en ella."""
+    top = max(view.cu_t_h, default=0.0)
+    if top <= 0:
+        return [0] * view.params.cells
+    return [math.floor(BUBBLES_PER_CELL * c / top + 0.5) for c in view.cu_t_h]
+
+
+def _bubble(loaded: bool, cell: int = 0) -> str:
     out = (f'<circle r="{BUBBLE_R}" fill="#EAF3F7" fill-opacity=".8" stroke="{WATER}" '
            f'stroke-width="1.2"/>')  # fmt: skip
     if loaded:
-        out += (f'<circle cx="{BUBBLE_R * 0.55:.1f}" cy="{-BUBBLE_R * 0.4:.1f}" r="2.4" '
-                f'fill="{BRONZE}"/>')  # fmt: skip
+        out += (f'<circle class="pc-loaded" data-cell="{cell}" cx="{BUBBLE_R * 0.55:.1f}" '
+                f'cy="{-BUBBLE_R * 0.4:.1f}" r="2.4" fill="{BRONZE}"/>')  # fmt: skip
     return out
 
 
@@ -70,11 +84,21 @@ def _cell(i: int, x: float, w: float, view: FlotationView, heights: tuple[float,
         f'stroke="{STEEL}" stroke-width="2"/>'
     ]
     dist, duration = TANK_H - 20, rise_duration_s(k)
-    for col, fx in enumerate((0.3, 0.7)):
-        for b in range(3):
-            phase = (b + 0.5 * col) / 3 % 1.0
-            parts.append(rise(x + w * fx, PULP_Y + TANK_H - 8, dist, duration, phase,
-                              _bubble(True), paused))  # fmt: skip
+    loaded = loaded_counts(view)[i]
+    slots = [(col, b) for b in range(3) for col in range(2)]  # se cargan en este orden
+    for n, (col, b) in enumerate(slots):
+        phase = (b + 0.5 * col) / 3 % 1.0
+        parts.append(
+            rise(
+                x + w * (0.3, 0.7)[col],
+                PULP_Y + TANK_H - 8,
+                dist,
+                duration,
+                phase,
+                _bubble(n < loaded, i + 1),
+                paused,
+            )
+        )
     parts.append(rise(x + w * 0.5, PULP_Y + TANK_H - 8, dist, GANGUE_RISE_S, (i * 0.37) % 1.0,
                       f'<circle r="2.2" fill="{GANGUE}"/>', paused))  # fmt: skip
     y = PULP_Y
@@ -97,7 +121,7 @@ def _legend(view: FlotationView) -> str:
     top = max(view.solids_t_h, default=0.0)
     y = H - 36
     items = [
-        (BRONZE, "CuFeS₂: el ritmo de sus burbujas es la constante cinética k"),
+        (BRONZE, "CuFeS₂: ritmo de las burbujas ∝ k; las que llevan Cu, ∝ t/h de la celda"),
         (GANGUE, "SiO₂: arrastre fijo, supuesto del ejemplo; reparto parejo entre celdas"),
     ]
     out = []

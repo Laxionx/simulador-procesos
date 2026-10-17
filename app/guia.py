@@ -3,6 +3,8 @@ autores salen las ecuaciones (las mismas fuentes de docs/)."""
 
 from __future__ import annotations
 
+import textwrap
+
 import pandas as pd
 import streamlit as st
 from controles import EW, FLOT, data_table
@@ -22,6 +24,7 @@ RUTA_PIRO = (
     ("Electrorrefinación", REPO_ONLY),
 )
 RUTA_HIDRO = (
+    ("Mineral oxidado (chancado)", "materia prima"),
     ("Lixiviación", REPO_ONLY),
     ("Extracción por solventes", REPO_ONLY),
     ("Electroobtención", ANIMADO),
@@ -89,10 +92,11 @@ def _box(x: int, y: int, name: str, state: str) -> str:
         fill, stroke, color = BRONZE, INK, "#FFFFFF"
     elif state == PROXIMO:
         dash = ' stroke-dasharray="6 4"'
-    first, _, rest = name.partition(" ")
-    label = text(x + 55, y + 24 if rest else y + 31, first, 13, "middle", color=color)
-    if rest:
-        label += text(x + 55, y + 40, rest, 13, "middle", color=color)
+    lines = textwrap.wrap(name, 14)
+    label = "".join(
+        text(x + 55, y + (31 if len(lines) == 1 else 24 + 16 * n), line, 13, "middle", color=color)
+        for n, line in enumerate(lines)
+    )
     return (
         f'<rect x="{x}" y="{y}" width="110" height="54" rx="6" fill="{fill}" stroke="{stroke}" '
         f'stroke-width="2"{dash}/>{label}{text(x + 55, y + 70, state, 11, "middle", color=STEEL)}'
@@ -111,22 +115,17 @@ def route_map() -> str:
     step, x0, y_pyro, y_hydro = 140, 20, 80, 230
     body = text(20, 30, "Del mineral al cátodo de cobre: mapa de los equipos", 17, cls="t")
     body += text(20, y_pyro - 14, "Ruta pirometalúrgica (concentrado de sulfuros)", 12, color=STEEL)
-    body += text(x0 + step, y_hydro - 14, "Ruta hidrometalúrgica (mineral lixiviable)", 12,
+    body += text(20, y_hydro - 14, "Ruta hidrometalúrgica (mineral lixiviable)", 12,
                  color=STEEL)  # fmt: skip
     for i, (name, state) in enumerate(RUTA_PIRO):
         body += _box(x0 + i * step, y_pyro, name, state)
         body += _arrow(x0 + i * step + 110, x0 + (i + 1) * step, y_pyro + 27)
     body += _box(x0 + len(RUTA_PIRO) * step, y_pyro, "Cátodo de Cu", REPO_ONLY)
-    for i, (name, state) in enumerate(RUTA_HIDRO):
-        xi = x0 + (i + 1) * step  # la lixiviación arranca bajo la flotación
+    for i, (name, state) in enumerate(RUTA_HIDRO):  # tiene su propio punto de partida
+        xi = x0 + i * step
         body += _box(xi, y_hydro, name, state)
         body += _arrow(xi + 110, xi + step, y_hydro + 27)
-    body += _box(x0 + (len(RUTA_HIDRO) + 1) * step, y_hydro, "Cátodo de Cu", REPO_ONLY)
-    body += (
-        f'<path d="M {x0 + 14} {y_pyro + 54} L {x0 + 14} {y_hydro + 27} L {x0 + step - 6} '
-        f'{y_hydro + 27}" stroke="{INK}" stroke-width="2" fill="none"/>'
-        f"{_arrow(x0 + step - 20, x0 + step, y_hydro + 27)}"
-    )
+    body += _box(x0 + len(RUTA_HIDRO) * step, y_hydro, "Cátodo de Cu", REPO_ONLY)
     body += text(20, 335, "Mapa estático, sin números. Bronce: animado en esta app. Línea "
                  "punteada: próximamente.", 12, color=STEEL)  # fmt: skip
     return svg(1000, 350, body, True, "Mapa del recorrido del concentrado al cátodo de cobre")

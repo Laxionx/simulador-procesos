@@ -59,6 +59,35 @@ def test_duplicar_k_duplica_el_ritmo_dibujado():
     assert slow[0] == pytest.approx(2 * fast[0], rel=1e-3)
 
 
+def _loaded_per_cell(svg_text: str) -> dict[int, int]:
+    counts: dict[int, int] = {}
+    for cell in re.findall(r'class="pc-loaded" data-cell="(\d+)"', svg_text):
+        counts[int(cell)] = counts.get(int(cell), 0) + 1
+    return counts
+
+
+@pytest.mark.parametrize("params", [F(), F(cells=5, k=1.0), F(cells=15, tau_min=1.0, k=0.1)])
+def test_burbujas_cargadas_por_celda_son_proporcionales_al_cu_que_manda(params):
+    view = calculo.run_flotation(params)
+    svg_text = fsvg.flotation_svg(view)
+    counts = _loaded_per_cell(svg_text)
+    n = [counts.get(i + 1, 0) for i in range(params.cells)]
+    assert n == fsvg.loaded_counts(view)
+    assert n == sorted(n, reverse=True)  # no crece a lo largo del banco
+    assert n[0] == fsvg.BUBBLES_PER_CELL  # la celda con más Cu lleva todas
+    top = max(view.cu_t_h)
+    for count, mass in zip(n, view.cu_t_h, strict=True):  # proporcional, salvo el redondeo
+        assert abs(count - fsvg.BUBBLES_PER_CELL * mass / top) <= 0.5 + 1e-9
+    still = _loaded_per_cell(fsvg.flotation_svg(view, paused=True))
+    assert still == counts
+
+
+def test_en_la_ultima_celda_casi_no_flota_cu():
+    view = calculo.run_flotation(F())
+    n = fsvg.loaded_counts(view)
+    assert n[-1] <= 1 and n[0] == 6  # la celda 9 casi no tiene Cu que cargar
+
+
 def test_la_ganga_no_tiene_ritmo_cinetico():
     # el arrastre fijo sube siempre igual, cambien la k o su recuperación
     for params in (F(k=0.1), F(k=2.0), F(gangue_recovery=0.3)):
