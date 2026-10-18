@@ -15,15 +15,16 @@ from dibujo import (
     COPPER,
     INK,
     RISE_CSS,
-    SCHEME_NOTE,
     STEEL,
     STEEL_LIGHT,
     R,
     es,
     rise,
+    scheme_note,
     svg,  # fmt: skip
     text,
 )
+from i18n import num_g, t
 
 W, H = 940, 560
 TANK_X, TANK_TOP, TANK_BOTTOM = 50.0, 150.0, 430.0
@@ -96,12 +97,12 @@ def _panel(view: EWView) -> str:
     r = view.result
     x = TANK_X + PLATES * PITCH + 38
     rows = [
-        ("Cátodo al final del ciclo", f"{es(view.cathode_kg, 1)} kg", True),
-        ("Espesor por cara", f"{es(view.thickness_mm, 2)} mm", True),
-        ("Corriente (un cátodo)", f"{es(r.current_a, 0)} A", False),
-        ("Voltaje de celda", f"{es(r.cell_voltage, 2)} V", False),
-        ("Potencia (un cátodo)", f"{es(r.power_kw, 2)} kW", False),
-        ("Energía específica", f"{es(r.specific_energy_kwh_t, 0)} kWh/t", False),
+        (t("svg.ew.p.cathode"), f"{es(view.cathode_kg, 1)} kg", True),
+        (t("svg.ew.p.thickness"), f"{es(view.thickness_mm, 2)} mm", True),
+        (t("ew.m1"), f"{es(r.current_a, 0)} A", False),
+        (t("ew.m2"), f"{es(r.cell_voltage, 2)} V", False),
+        (t("ew.m3"), f"{es(r.power_kw, 2)} kW", False),
+        (t("ew.m4"), f"{es(r.specific_energy_kwh_t, 0)} kWh/t", False),
     ]
     out, y = [], 175.0
     for label, value, big in rows:
@@ -115,17 +116,23 @@ def _legend(view: EWView) -> str:
     p = view.params
     y = H - 56
     rows = [
-        f"Ciclo de cosecha de {_days(p.cycle_days)} comprimido en {CYCLE_S:g} s; depósito dibujado "
-        f"con {es(DEPOSIT_PX_PER_MM)} px por mm real (exagerado). Celeste: electrolito.",
-        "Burbujas de O₂ en los ánodos: ilustrativas. Placas dibujadas: 6 ánodos y 5 cátodos.",
-        SCHEME_NOTE,
+        t(
+            "svg.ew.legend1",
+            days=_days(p.cycle_days),
+            cycle=num_g(CYCLE_S),
+            px=es(DEPOSIT_PX_PER_MM),
+        ),
+        t("svg.ew.legend2"),
+        scheme_note(),
     ]
     return "".join(text(TANK_X, y + 16 * n, s, 12, color=STEEL if n else INK)
                    for n, s in enumerate(rows))  # fmt: skip
 
 
 def _days(d: float) -> str:
-    return f"{es(d, 0)} días" if float(d).is_integer() and d != 1 else f"{es(d, 1)} día(s)"
+    if float(d).is_integer() and d != 1:
+        return t("svg.ew.days", n=es(d, 0))
+    return t("svg.ew.day", n=es(d, 1))
 
 
 def ew_svg(view: EWView, paused: bool = False) -> str:
@@ -138,12 +145,13 @@ def ew_svg(view: EWView, paused: bool = False) -> str:
         f'<rect x="{TANK_X - 4}" y="{PLATE_TOP - 6}" width="{width - TANK_X + 8}" height="6" '
         f'fill="{BRONZE}"/>'  # barra de contacto
     )
-    title = text(24, 30, "Celda de electroobtención en corte", 18, cls="t") + text(
-        24, 50, f"Cu {es(view.params.cu_g_l, 0)} g/L · H₂SO₄ {es(view.params.acid_g_l, 0)} g/L · "
-        f"{es(view.params.temp_c, 0)} °C · {es(view.params.current_density, 0)} A/m² · "
-        f"eficiencia {es(100 * view.params.efficiency, 0)} %", 13)  # fmt: skip
-    labels = text(TANK_X + PITCH / 2, PLATE_TOP - 14, "ánodo", 11, "middle", color=STEEL) + text(
-        TANK_X + 1.5 * PITCH, PLATE_TOP - 14, "cátodo", 11, "middle", color=STEEL
-    )
+    pr = view.params
+    title = text(24, 30, t("svg.ew.title"), 18, cls="t") + text(
+        24, 50, t("svg.ew.sub", cu=es(pr.cu_g_l, 0), acid=es(pr.acid_g_l, 0),
+                  temp=es(pr.temp_c, 0), j=es(pr.current_density, 0),
+                  eff=es(100 * pr.efficiency, 0)), 13)  # fmt: skip
+    labels = text(
+        TANK_X + PITCH / 2, PLATE_TOP - 14, t("svg.ew.anode"), 11, "middle", color=STEEL
+    ) + text(TANK_X + 1.5 * PITCH, PLATE_TOP - 14, t("svg.ew.cathode"), 11, "middle", color=STEEL)
     body = title + tank + _plates(view, paused) + labels + _panel(view) + _legend(view)
-    return svg(W, H, body, paused, "Celda de electroobtención con cátodos que engordan", MOTION_CSS)
+    return svg(W, H, body, paused, t("svg.ew.label"), MOTION_CSS)

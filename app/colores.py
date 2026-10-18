@@ -5,7 +5,6 @@ Charity, vendian.org, 2001), y así se rotula en los esquemas."""
 
 from __future__ import annotations
 
-NOTE = "color ilustrativo de la temperatura"
 STOPS = (
     (500.0, (70, 20, 15)),
     (800.0, (150, 30, 20)),

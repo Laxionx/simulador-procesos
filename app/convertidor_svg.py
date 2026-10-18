@@ -16,12 +16,11 @@ import math
 import textwrap
 
 from calculo_piro import BathState, ConverterView
-from colores import NOTE, darker, temperature_color
+from colores import darker, temperature_color
 from dibujo import (
     DASH_CSS,
     INK,
     RISE_CSS,
-    SCHEME_NOTE,
     STEEL,
     STEEL_LIGHT,
     WATER,
@@ -29,9 +28,11 @@ from dibujo import (
     es,
     flow,  # fmt: skip
     rise,
+    scheme_note,
     svg,
     text,
 )
+from i18n import num_g, t, tm
 
 W, H = 960, 640
 CX, CY, RAD = 330.0, 300.0, 150.0
@@ -186,14 +187,32 @@ def _flows(view: ConverterView, paused: bool) -> str:
 def _panel(view: ConverterView) -> str:
     out, y = [], 120.0
     for i, s in enumerate(view.states):
-        out.append(text(570, y, f"{i + 1} · {s.name}", 13, cls="t"))
-        out.append(text(570, y + 18, f"{s.lower_name}: {es(s.lower_t, 1)} t, "
-                        f"{es(s.lower_g_cm3, 2)} g/cm³, {es(s.lower_m3, 1)} m³", 12))  # fmt: skip
-        slag = (f"escoria: {es(s.slag_t, 1)} t, {es(s.slag_m3, 1)} m³" if s.slag_t > 0
-                else "sin escoria todavía")  # fmt: skip
+        out.append(text(570, y, t("svg.conv.state", i=i + 1, name=tm(s.name)), 13, cls="t"))
+        out.append(
+            text(
+                570,
+                y + 18,
+                t(
+                    "svg.conv.lower",
+                    name=tm(s.lower_name),
+                    t=es(s.lower_t, 1),
+                    rho=es(s.lower_g_cm3, 2),
+                    m3=es(s.lower_m3, 1),
+                ),
+                12,
+            )
+        )
+        slag = (
+            t("svg.conv.slag", t=es(s.slag_t, 1), m3=es(s.slag_m3, 1))
+            if s.slag_t > 0
+            else t("svg.conv.noslag")
+        )
         out.append(text(570, y + 35, slag, 12))
-        blow = (f"soplado: {es(s.air_nm3, 0)} Nm³ de aire, {es(s.so2_t, 1)} t de SO₂"
-                if s.air_nm3 > 0 else "antes de soplar")  # fmt: skip
+        blow = (
+            t("svg.conv.blow", air=es(s.air_nm3, 0), so2=es(s.so2_t, 1))
+            if s.air_nm3 > 0
+            else t("svg.conv.noblow")
+        )
         out.append(text(570, y + 52, blow, 12, color=STEEL))
         y += 90
     return "".join(out)
@@ -201,11 +220,17 @@ def _panel(view: ConverterView) -> str:
 
 def _state_labels(view: ConverterView, paused: bool) -> str:
     if paused:
-        return text(CX, CY + RAD + 36, "Fin del soplado a escoria (estado 2 de 3)", 14,
-                    "middle", cls="t")  # fmt: skip
+        return text(CX, CY + RAD + 36, t("svg.conv.paused"), 14, "middle", cls="t")
     return "".join(
         f'<g class="pc-state{i}">'
-        + text(CX, CY + RAD + 36, f"Estado {i + 1} de 3: {s.name}", 14, "middle", cls="t")
+        + text(
+            CX,
+            CY + RAD + 36,
+            t("svg.conv.stateof", i=i + 1, name=tm(s.name)),
+            14,
+            "middle",
+            cls="t",
+        )
         + "</g>"
         for i, s in enumerate(view.states)
     )
@@ -213,14 +238,15 @@ def _state_labels(view: ConverterView, paused: bool) -> str:
 
 def _legend(view: ConverterView) -> str:
     paragraphs = [
-        f"Área del baño ∝ volumen de cada fase (t ÷ densidad): {PX2_PER_M3:g} px² por m³. Mata y "
-        "metal blanco por mezcla ideal Cu₂S-FeS (±10 %); blíster = Cu líquido; escoria 3,7 g/cm³ "
-        "(aprox.: la del convertidor, con magnetita, es más densa).",
-        f"El bucle de {CYCLE_S:g} s pasa por tres estados del cálculo; la transición entre ellos, "
-        "las burbujas de las toberas y la forma son ilustrativas. Grosor del aire ∝ Nm³ y del SO₂ "
-        f"∝ t de cada soplado. Color: {NOTE} del baño ({es(view.params.bath_c, 0)} °C).",
+        t("svg.conv.legend1", px=num_g(PX2_PER_M3)),
+        t(
+            "svg.conv.legend2",
+            cycle=num_g(CYCLE_S),
+            note=t("scheme.temp"),
+            temp=es(view.params.bath_c, 0),
+        ),
     ]
-    lines = [ln for para in paragraphs for ln in textwrap.wrap(para, 135)] + [SCHEME_NOTE]
+    lines = [ln for para in paragraphs for ln in textwrap.wrap(para, 135)] + [scheme_note()]
     top = H - 17 * len(lines) - 4
     return "".join(
         text(24, top + 17 * n, ln, 12, color=INK if n == len(lines) - 1 else STEEL)
@@ -229,11 +255,10 @@ def _legend(view: ConverterView) -> str:
 
 
 def converter_svg(view: ConverterView, paused: bool = False) -> str:
-    title = text(24, 30, "Convertidor Peirce-Smith, corte transversal", 18, cls="t")
+    title = text(24, 30, t("svg.conv.title"), 18, cls="t")
     body = (
         title + _bath(view, paused) + _shell(view, paused) + _flows(view, paused)
         + _state_labels(view, paused) + _panel(view) + _legend(view)
     )  # fmt: skip
     css = RISE_CSS + DASH_CSS + _motion_css(view)
-    return svg(W, H, body, paused, "Convertidor Peirce-Smith con baño de mata, metal y escoria",
-               css)  # fmt: skip
+    return svg(W, H, body, paused, t("svg.conv.label"), css)

@@ -1,0 +1,95 @@
+"""English texts of the tabs of each piece of equipment and of their charts."""
+
+T = {
+    "page.title": "Copper plant simulator",
+    "app.title": "Copper plant simulator",
+    "app.caption": (
+        "Equipment animated from its real calculation, from published equations. Start with the "
+        "**Guide**; change the data in the sidebar."
+    ),
+    "toggle.label": "Animate the equipment",
+    "toggle.help": (
+        "Turns off the diagram animations. They also turn off by themselves if the system has "
+        "«reduce motion» enabled."
+    ),
+    "tab.guide": "Guide",
+    "flot.err": "The bank could not be calculated with these data: {exc}",
+    "flot.m1": "Cu recovery (CuFeS₂)",
+    "flot.m2": "SiO₂ recovery (assumed)",
+    "flot.m3": "Concentrate (t/h of solids)",
+    "flot.m4": "Cu grade of the concentrate",
+    "flot.alt": "Flotation bank with cells in series",
+    "flot.cap1": (
+        "The Cu-loaded bubbles rise at the pace of their kinetic constant k. The froth of each "
+        "cell is as thick as the t/h of solids it sends to the concentrate. SiO₂ and water have "
+        "no kinetics in the model: only their total recovery is known, and it is split evenly "
+        "among cells (an assumption of the example)."
+    ),
+    "flot.cap2": (
+        "The measured points are those of bank A of Los Pelambres (9 cells, τ of 4.1 min): they "
+        "are only compared with the model if the data are those of the example."
+    ),
+    "flot.col.cell": "Cell",
+    "flot.col.cu": "CuFeS₂ to concentrate (t/h)",
+    "flot.col.sio2": "SiO₂ to concentrate (t/h)",
+    "flot.col.water": "Water to concentrate (t/h)",
+    "flot.col.cum": "Cumulative Cu recovered (%)",
+    "flot.cap3": "The sum of each column over the cells is what the model gives for the whole bank.",
+    "ew.err": "The cell could not be calculated with these data: {exc}",
+    "ew.m1": "Current (one cathode)",
+    "ew.m2": "Cell voltage",
+    "ew.m3": "Power (one cathode)",
+    "ew.m4": "Specific energy",
+    "ew.alt": "Electrowinning cell with growing cathodes",
+    "ew.cap": (
+        "Each cathode ends the cycle with **{kg} kg** of copper and **{mm} mm** per face "
+        "(Faraday × efficiency; thickness = mass ÷ (Cu density × area of the two faces)). The "
+        "drawing exaggerates the thickness; the numbers are the real ones."
+    ),
+    "flash.err": "The furnace could not be calculated with these data: {exc}",
+    "flash.m1": "Matte (kg/t of concentrate)",
+    "flash.m2": "Slag (kg/t)",
+    "flash.m3": "Technical O₂ (Nm³/t)",
+    "flash.m4": "SO₂ (kg/t)",
+    "flash.alt": "Flash smelting furnace with reaction shaft and settler",
+    "flash.cap": (
+        "Matte: {matte_m3} m³ per t of concentrate; slag: {slag_m3} m³. The height of each layer "
+        "is proportional to that volume (kg ÷ density). Drawing densities: matte 4.8 g/cm³ by "
+        "ideal mixture (±10 %), slag 3.7 g/cm³ (approx.)."
+    ),
+    "flash.head": "**Model versus plant** (blend {blend}, Bacedoni et al. 2020)",
+    "flash.row.o2": "O₂ consumption (Nm³/t)",
+    "flash.row.air": "O₂ in the air (% vol.)",
+    "flash.row.flux": "Flux (% of the charge)",
+    "flash.col.this": "This calculation",
+    "flash.col.paper": "Paper model (Table 14)",
+    "flash.col.plant": "Plant (Table 13)",
+    "flash.cap2": (
+        "The plant ran this blend with a matte of {grade} % Cu, {sio2} % SiO₂ in the slag and "
+        "{loss} MJ/t of loss; the controls do not change by themselves when you choose the "
+        "blend. The paper's model does not match the measured O₂ consumption either."
+    ),
+    "conv.err": "The converter could not be calculated with these data: {exc}",
+    "conv.m1": "Total air (Nm³ per 100 t of matte)",
+    "conv.m2": "Flux (t)",
+    "conv.m3": "Blister copper (t)",
+    "conv.m4": "SO₂ (t)",
+    "conv.alt": "Peirce-Smith converter in cross-section",
+    "conv.cap": (
+        "Bath volume: {charge} m³ of matte when charged; {slag_end} m³ at the end of the slag "
+        "blow ({white} of white metal and {slag} of slag); {cu_end} m³ at the end of the copper "
+        "blow ({blister} of blister copper and {slag2} of slag)."
+    ),
+    "conv.cap2": "Each blow closes by mass: what goes in, with the O₂ that reacts, is what comes out.",
+    "plot.rec.model": "model (first order, perfect mixing)",
+    "plot.rec.measured": "measured, Vinnett et al. 2022 (bank A)",
+    "plot.rec.title": "Cumulative Cu recovery by cell",
+    "plot.rec.x": "Cell",
+    "plot.rec.y": "Cumulative Cu recovered (%)",
+    "plot.volt.cell": "Cell",
+    "plot.volt.total": "Total: {v} V",
+    "plot.volt.title": "What the cell voltage is made of",
+    "plot.volt.x": "Voltage (V)",
+    "plot.conv.title": "What goes in and out of each blow (t)",
+    "plot.conv.y": "Tonnes per 100 t of matte",
+}

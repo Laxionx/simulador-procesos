@@ -11,20 +11,21 @@ las partículas que caen en la torre, y la forma del horno.
 from __future__ import annotations
 
 from calculo_piro import FlashView
-from colores import NOTE, darker, temperature_color
+from colores import darker, temperature_color
 from dibujo import (
     BRONZE,
     DASH_CSS,
     INK,
     RISE_CSS,
-    SCHEME_NOTE,
     STEEL,
     es,
     flow,
     rise,  # fmt: skip
+    scheme_note,
     svg,
     text,
 )
+from i18n import num_g, t
 
 W, H = 960, 580
 SETTLER_X0, SETTLER_X1, BATH_BOTTOM, SETTLER_TOP = 130.0, 700.0, 450.0, 300.0
@@ -62,8 +63,16 @@ def _bath(view: FlashView) -> str:
         f'height="{matte_h:.2f}" fill="{hot}"/>'
         f'<rect class="pc-slag" x="{SETTLER_X0}" y="{top_of_matte - slag_h:.2f}" width="{width}" '
         f'height="{slag_h:.2f}" fill="{darker(hot)}"/>'
-        + text(SETTLER_X0 + 10, top_of_matte - slag_h / 2 + 4, "escoria", 13, color="#FFFFFF")
-        + text(SETTLER_X0 + 10, top_of_matte + matte_h / 2 + 4, "mata", 13, color="#1F2A30")
+        + text(
+            SETTLER_X0 + 10, top_of_matte - slag_h / 2 + 4, t("svg.flash.slag"), 13, color="#FFFFFF"
+        )
+        + text(
+            SETTLER_X0 + 10,
+            top_of_matte + matte_h / 2 + 4,
+            t("svg.flash.matte"),
+            13,
+            color="#1F2A30",
+        )
     )
 
 
@@ -99,18 +108,30 @@ def _flows(view: FlashView, paused: bool) -> str:
         flow(conc, 8.0, BRONZE, 40.0, paused)
         + flow(air, o2_width(o2), "#3B82A6", O2_SPEED_PER_NM3_T * o2, paused)
         + flow(gas, gas_width(so2), "#B8B0A0", SO2_SPEED_PER_KG_T * so2, paused)
-        + text(TOWER_X0 + 25, 54, "concentrado", 12, "middle")
-        + text(TOWER_X1 - 12, 54, f"O₂ técnico {es(o2, 1)} Nm³/t", 12)
-        + text(860, 48, f"gases: SO₂ {es(so2, 0)} kg/t", 12, "end")
+        + text(TOWER_X0 + 25, 54, t("svg.flash.conc"), 12, "middle")
+        + text(TOWER_X1 - 12, 54, t("svg.flash.o2", v=es(o2, 1)), 12)
+        + text(860, 48, t("svg.flash.gas", v=es(so2, 0)), 12, "end")
     )
 
 
 def _panel(view: FlashView) -> str:
     r = view.result
     rows = [
-        ("Mata", f"{es(view.matte_kg_t, 0)} kg/t", f"{es(view.matte_m3_t, 3)} m³/t"),
-        ("Escoria", f"{es(view.slag_kg_t, 0)} kg/t", f"{es(view.slag_m3_t, 3)} m³/t"),
-        ("Enriquecimiento", f"{es(r.enrichment_pct, 1)} % O₂", f"fundente {es(r.flux_pct, 1)} %"),
+        (
+            t("svg.flash.p.matte"),
+            t("svg.flash.kg_t", v=es(view.matte_kg_t, 0)),
+            t("svg.flash.m3_t", v=es(view.matte_m3_t, 3)),
+        ),
+        (
+            t("svg.flash.p.slag"),
+            t("svg.flash.kg_t", v=es(view.slag_kg_t, 0)),
+            t("svg.flash.m3_t", v=es(view.slag_m3_t, 3)),
+        ),
+        (
+            t("svg.flash.p.enrich"),
+            t("svg.flash.o2_pct", v=es(r.enrichment_pct, 1)),
+            t("svg.flash.flux", v=es(r.flux_pct, 1)),
+        ),
     ]
     out, y = [], 170.0
     for label, big, small in rows:
@@ -124,22 +145,23 @@ def _panel(view: FlashView) -> str:
 def _legend(view: FlashView) -> str:
     t_c = view.result.products_k - 273.15
     rows = [
-        f"Alto de capa ∝ volumen por t de concentrado (kg/t ÷ densidad): {PX_PER_M3_T:g} px por "
-        f"m³/t, misma sección. Densidad de la mata {es(view.matte_density, 2)} g/cm³ (±10 %), "
-        f"escoria {es(view.slag_density, 1)} g/cm³ (aprox.).",
-        f"Grosor de las flechas ∝ caudal calculado. Color de las capas: {NOTE} de los productos "
-        f"({es(t_c, 0)} °C). Llama y partículas en la torre: ilustrativas.",
-        SCHEME_NOTE,
+        t(
+            "svg.flash.legend1",
+            px=num_g(PX_PER_M3_T),
+            matte=es(view.matte_density, 2),
+            slag=es(view.slag_density, 1),
+        ),
+        t("svg.flash.legend2", note=t("scheme.temp"), temp=es(t_c, 0)),
+        scheme_note(),
     ]
     return "".join(text(24, H - 56 + 17 * n, s, 12, color=INK if n == 2 else STEEL)
                    for n, s in enumerate(rows))  # fmt: skip
 
 
 def flash_svg(view: FlashView, paused: bool = False) -> str:
-    title = text(24, 30, "Horno flash de cobre", 18, cls="t")
+    title = text(24, 30, t("svg.flash.title"), 18, cls="t")
     body = (
         _furnace() + _bath(view) + _particles(paused) + _flows(view, paused) + _panel(view)
         + _legend(view) + title
     )  # fmt: skip
-    return svg(W, H, body, paused, "Horno flash con torre de reacción y asentador",
-               RISE_CSS + DASH_CSS)  # fmt: skip
+    return svg(W, H, body, paused, t("svg.flash.label"), RISE_CSS + DASH_CSS)

@@ -1,6 +1,10 @@
+[English version](README.en.md)
+
 # simulador-procesos
 
 Simulador de procesos metalúrgicos implementado **desde la literatura**: balance de masa y de calor de plantas con reacciones químicas, equilibrio acuoso, reciclos y lazos de control. Es independiente de cualquier software comercial.
+
+![El convertidor Peirce-Smith animado según su cálculo: tres estados del baño (carga, fin del soplado a escoria, fin del soplado a cobre) con el volumen de cada fase](docs/img/convertidor.es.gif)
 
 **Fases 1 a 4 (esta versión):** balance de masa y de calor en estado estacionario, equilibrio químico acuoso con PHREEQC, extracción por solventes y electroobtención de cobre, molienda conectada a simulador-conminucion, flotación cinética, fusión flash y conversión Peirce-Smith de cobre (balance de masa y de calor), horno de ánodos, electrorrefinación con purga y celdas liberadoras, fundición de estaño en dos etapas, y reporte HTML con diagrama de flujo y costo operativo.
 
@@ -172,14 +176,14 @@ Ver [docs/cadena.md](docs/cadena.md).
 
 App Streamlit didáctica: equipos metalúrgicos animados según su cálculo real (flotación en serie, horno flash, convertidor Peirce-Smith y celda de electroobtención), con una guía del recorrido del concentrado al cátodo. Las burbujas, la espuma, las capas del baño y el depósito de cobre se dibujan con los números de `procesos.flotacion`, `procesos.fusion`, `procesos.conversion` y `procesos.ew`.
 
-**[▶ Probar en el navegador](https://simulador-procesos-ntfmuyhlnqc9d73kkqljzk.streamlit.app/)** (Streamlit Community Cloud, sin registro).
+**[▶ Probar en el navegador](https://simulador-procesos-ntfmuyhlnqc9d73kkqljzk.streamlit.app/)** (Streamlit Community Cloud, sin registro). La app tiene un selector Español / English arriba de la barra lateral; con `?lang=en` abre en inglés.
 
 ```bash
 pip install -e ".[app]"
 streamlit run app/streamlit_app.py
 ```
 
-Para la nube basta `requirements.txt` (versiones fijas). Los datos de entrada y la tabla «Qué datos necesita» salen de una sola definición, `app/controles.py`.
+Para la nube basta `requirements.txt` (versiones fijas). Los datos de entrada y la tabla «Qué datos necesita» salen de una sola definición, `app/controles.py`; los textos de cada idioma están en `app/textos_es*.py` y `app/textos_en*.py`.
 
 ## Reporte HTML y costo operativo (fase 4)
 

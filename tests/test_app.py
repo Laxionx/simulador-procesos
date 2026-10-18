@@ -14,6 +14,7 @@ APP = str(ROOT / "app" / "streamlit_app.py")
 sys.path.insert(0, str(ROOT / "app"))
 
 import controles  # noqa: E402
+import i18n  # noqa: E402
 from guia import markdown_table  # noqa: E402
 
 
@@ -44,7 +45,8 @@ def test_los_controles_salen_de_la_misma_definicion_que_la_tabla():
     for d in controles.DATOS:  # el widget de la barra lateral es lo que dice la definición
         w = widgets[controles.PREFIX + d.key]
         if d.widget == "select":
-            assert (len(w.options), w.value) == (d.hi - d.lo + 1, d.default), d.key
+            # la lista muestra «Mezcla 1» a «Mezcla 4»; su valor es el número
+            assert (len(w.options), w.value) == (d.hi - d.lo + 1, i18n.t("blend", n=d.default))
         else:
             assert (w.min, w.max, w.value) == (d.lo, d.hi, d.default), d.key
     table = controles.data_table()
@@ -72,7 +74,7 @@ def test_controles_en_los_extremos_no_tumban_la_app(extreme):
     at = AppTest.from_file(APP, default_timeout=120).run()
     for w in _widgets(at):
         if w in at.sidebar.selectbox:
-            w.set_value(1 if extreme == "min" else 4)
+            w.set_value(i18n.t("blend", n=1 if extreme == "min" else 4))
         else:
             w.set_value(w.min if extreme == "min" else w.max)
     at.run()
@@ -112,7 +114,7 @@ def test_un_fallo_del_modelo_se_muestra_sin_traza(monkeypatch):
 @pytest.mark.parametrize("blend", [1, 2, 3, 4])
 def test_las_cuatro_mezclas_del_horno_cargan(blend):
     at = AppTest.from_file(APP, default_timeout=120).run()
-    at.sidebar.selectbox[0].set_value(blend).run()
+    at.sidebar.selectbox[0].set_value(i18n.t("blend", n=blend)).run()
     assert not at.exception and not at.error
     assert any(m.label == "Mata (kg/t de concentrado)" for m in at.metric)
 

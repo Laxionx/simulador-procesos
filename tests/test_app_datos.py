@@ -163,7 +163,7 @@ def test_el_ejemplo_reproduce_el_banco_a_de_vinnett():
 def test_el_esquema_de_flotacion_trae_los_valores_calculados_y_la_leyenda():
     view = calculo.run_flotation(F())
     svg_text = fsvg.flotation_svg(view)
-    assert f"{100 * view.recoveries['CuFeS2']:.1f} %" in svg_text
+    assert f"{es(100 * view.recoveries['CuFeS2'])} %" in svg_text  # coma decimal en español
     assert es(view.concentrate_t_h) in svg_text
     assert es(view.cu_grade_pct) in svg_text
     assert LEYENDA in svg_text

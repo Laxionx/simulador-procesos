@@ -1,5 +1,6 @@
 """Cada dato de entrada se define una sola vez: arma la barra lateral y la tabla «Qué datos
-necesita» de la guía, así las dos no se pueden desfasar."""
+necesita» de la guía, así las dos no se pueden desfasar. Sus textos están en `textos_es_datos.py`
+y `textos_en_datos.py`, con las claves `dato.<clave>.label|meaning|source`."""
 
 from __future__ import annotations
 
@@ -9,111 +10,106 @@ import pandas as pd
 import streamlit as st
 from calculo import EWParams, FlotationParams
 from calculo_piro import ConverterParams, FlashParams
+from i18n import current, int_num, num_g, t, use
 
 FLOT, EW = "Flotación", "Electroobtención"
 FLASH, CONV = "Horno flash", "Convertidor"
 PREFIX = "dato_"
 
 
+def _tx(text: str) -> str:
+    """El texto de una clave de `textos_*`; si no es una clave, el propio texto."""
+    try:
+        return t(text)
+    except KeyError:
+        return text
+
+
 @dataclass(frozen=True)
 class Dato:
     equipo: str
     key: str
-    label: str
-    unit: str
+    label_k: str
+    unit_k: str
     lo: float
     hi: float
     default: float
     step: float
-    meaning: str
-    source: str
+    meaning_k: str
+    source_k: str
     widget: str = "number"  # number | slider | select (enteros de lo a hi)
+
+    @property
+    def label(self) -> str:
+        return _tx(self.label_k)
+
+    @property
+    def unit(self) -> str:
+        return _tx(self.unit_k)
+
+    @property
+    def meaning(self) -> str:
+        return _tx(self.meaning_k)
+
+    @property
+    def source(self) -> str:
+        return _tx(self.source_k)
 
     @property
     def help(self) -> str:
         unit = f" ({self.unit})" if self.unit else ""
-        return (
-            f"{self.meaning} Rango{unit}: {_num(self.lo)} a {_num(self.hi)}. "
-            f"En planta: {self.source}"
-        )
+        return t("dato.help", meaning=self.meaning, unit=unit, lo=_num(self.lo), hi=_num(self.hi),
+                 source=self.source)  # fmt: skip
 
 
 def _num(x: float) -> str:
-    """Número en español: «1 000», «2,7»."""
-    if float(x).is_integer():
-        return f"{int(x):,}".replace(",", " ")
-    return f"{x:g}".replace(".", ",")
+    """Número en el formato del idioma: «1 000», «2,7» (es) o «1,000», «2.7» (en)."""
+    return int_num(x) if float(x).is_integer() else num_g(x)
 
 
 DATOS: tuple[Dato, ...] = (
-    Dato(FLOT, "cells", "Número de celdas", "", 1, 15, 9, 1,
-         "Celdas de flotación en serie; el concentrado de cada una se suma al del banco.",
-         "plano del banco.", widget="slider"),
-    Dato(FLOT, "tau", "Tiempo de residencia por celda (τ)", "min", 0.5, 15, 4.1, 0.1,
-         "Tiempo medio que la pulpa pasa dentro de cada celda (mezcla perfecta).",
-         "prueba con trazador, o volumen útil de la celda entre el caudal de pulpa."),
-    Dato(FLOT, "r_inf", "R∞ del Cu (calcopirita)", "%", 50, 100, 94, 1,
-         "Recuperación máxima que alcanzaría el Cu con tiempo infinito.",
-         "se ajusta a la recuperación medida celda a celda del banco."),
-    Dato(FLOT, "k", "k del Cu", "1/min", 0.05, 2.0, 0.35, 0.05,
-         "Constante cinética de primer orden: qué tan rápido flota el Cu.",
-         "se ajusta a la recuperación medida celda a celda, o a pruebas batch de laboratorio."),
-    Dato(FLOT, "gangue", "Recuperación fija de la ganga (SiO₂)", "%", 0, 30, 5, 1,
-         "Parte de la ganga que llega al concentrado por arrastre, sin cinética. En el ejemplo es "
-         "un supuesto, no una medida.",
-         "ensayes de ganga en concentrado y relave."),
-    Dato(EW, "j", "Densidad de corriente", "A/m²", 150, 400, 300, 10,
-         "Corriente por metro cuadrado de cátodo.",
-         "corriente de la rectificadora entre el área catódica de la nave."),
-    Dato(EW, "eff", "Eficiencia de corriente", "%", 80, 99, 92, 1,
-         "Parte de la corriente que deposita cobre; el resto se pierde en cortocircuitos y en el "
-         "ciclo Fe³⁺/Fe²⁺.",
-         "cobre cosechado entre el que da la ley de Faraday."),
-    Dato(EW, "cu", "Cobre en el electrolito", "g/L", 20, 70, 40, 1,
-         "Concentración de Cu²⁺ del electrolito que sale de la celda.",
-         "análisis del electrolito (absorción atómica)."),
-    Dato(EW, "acid", "Ácido sulfúrico", "g/L", 100, 220, 170, 5,
-         "Concentración de H₂SO₄ del electrolito; más ácido, más conductor.",
-         "titulación del electrolito."),
-    Dato(EW, "temp", "Temperatura", "°C", 35, 65, 50, 1,
-         "Temperatura del electrolito; más caliente, más conductor.",
-         "termocupla en la celda."),
-    Dato(EW, "days", "Días del ciclo de cosecha", "días", 1, 10, 7, 1,
-         "Tiempo que el cátodo queda en la celda antes de cosecharse. Dato operativo, no del "
-         "modelo; el valor del ejemplo es un supuesto típico.",
-         "programa de cosecha de la nave."),
-    Dato(EW, "area", "Área de una cara del cátodo", "m²", 0.5, 1.5, 1.0, 0.05,
-         "Área sumergida de una cara; el cátodo tiene dos. Dato operativo, no del modelo; el "
-         "valor del ejemplo es un supuesto típico.",
-         "plano del cátodo."),
-    Dato(FLASH, "blend", "Mezcla de concentrados", "", 1, 4, 1, 1,
-         "Cuál de las cuatro mezclas de concentrado de Atlantic Copper (Huelva) se funde; cambia "
-         "la mineralogía de la carga.",
-         "análisis mineralógico de la carga del horno.", widget="select"),
-    Dato(FLASH, "f_grade", "Ley de la mata", "% Cu", 60, 70, 63.7, 0.5,
-         "Meta de cobre en la mata; la operación la fija con el oxígeno que se sopla.",
-         "ensaye de la mata que sale del horno."),
-    Dato(FLASH, "f_sio2", "SiO₂ de la escoria", "%", 25, 32, 29, 0.5,
-         "Meta de sílice en la escoria; define cuánto fundente se agrega.",
-         "ensaye de la escoria."),
-    Dato(FLASH, "f_loss", "Pérdida térmica del horno", "MJ/t", 150, 260, 205.5, 5,
-         "Calor que el horno pierde por sus paredes, por tonelada de carga.",
-         "balance de calor de la planta o agua de enfriamiento."),
-    Dato(FLASH, "f_temp", "Temperatura de los productos", "°C", 1250, 1325, 1300, 5,
-         "Temperatura de la mata y la escoria que salen del horno.",
-         "termocupla o lanza de temperatura en el asentador."),
-    Dato(CONV, "c_grade", "Ley de la mata", "% Cu", 50, 72, 62, 0.5,
-         "Cobre de la mata que se carga al convertidor (100 t por carga).",
-         "ensaye de la mata del horno."),
-    Dato(CONV, "c_eff_slag", "Eficiencia de O₂, soplado a escoria", "%", 40, 95, 62, 1,
-         "Parte del oxígeno soplado que reacciona en el soplado a escoria.",
-         "oxígeno que reacciona (balance) entre el que se sopla (flujo de aire)."),
-    Dato(CONV, "c_eff_copper", "Eficiencia de O₂, soplado a cobre", "%", 50, 95, 77, 1,
-         "Ídem, en el soplado a cobre.",
-         "oxígeno que reacciona (balance) entre el que se sopla (flujo de aire)."),
-    Dato(CONV, "c_bath", "Temperatura del baño", "°C", 1150, 1300, 1200, 10,
-         "Temperatura del baño; solo cambia el balance de calor y la densidad del cobre.",
-         "pirómetro óptico o termocupla de inmersión."),
+    Dato(FLOT, "cells", "dato.cells.label", "", 1, 15, 9, 1,
+         "dato.cells.meaning", "dato.cells.source", widget="slider"),
+    Dato(FLOT, "tau", "dato.tau.label", "min", 0.5, 15, 4.1, 0.1,
+         "dato.tau.meaning", "dato.tau.source"),
+    Dato(FLOT, "r_inf", "dato.r_inf.label", "%", 50, 100, 94, 1,
+         "dato.r_inf.meaning", "dato.r_inf.source"),
+    Dato(FLOT, "k", "dato.k.label", "1/min", 0.05, 2.0, 0.35, 0.05,
+         "dato.k.meaning", "dato.k.source"),
+    Dato(FLOT, "gangue", "dato.gangue.label", "%", 0, 30, 5, 1,
+         "dato.gangue.meaning", "dato.gangue.source"),
+    Dato(EW, "j", "dato.j.label", "A/m²", 150, 400, 300, 10,
+         "dato.j.meaning", "dato.j.source"),
+    Dato(EW, "eff", "dato.eff.label", "%", 80, 99, 92, 1,
+         "dato.eff.meaning", "dato.eff.source"),
+    Dato(EW, "cu", "dato.cu.label", "g/L", 20, 70, 40, 1,
+         "dato.cu.meaning", "dato.cu.source"),
+    Dato(EW, "acid", "dato.acid.label", "g/L", 100, 220, 170, 5,
+         "dato.acid.meaning", "dato.acid.source"),
+    Dato(EW, "temp", "dato.temp.label", "°C", 35, 65, 50, 1,
+         "dato.temp.meaning", "dato.temp.source"),
+    Dato(EW, "days", "dato.days.label", "unit.days", 1, 10, 7, 1,
+         "dato.days.meaning", "dato.days.source"),
+    Dato(EW, "area", "dato.area.label", "m²", 0.5, 1.5, 1.0, 0.05,
+         "dato.area.meaning", "dato.area.source"),
+    Dato(FLASH, "blend", "dato.blend.label", "", 1, 4, 1, 1,
+         "dato.blend.meaning", "dato.blend.source", widget="select"),
+    Dato(FLASH, "f_grade", "dato.f_grade.label", "% Cu", 60, 70, 63.7, 0.5,
+         "dato.f_grade.meaning", "dato.f_grade.source"),
+    Dato(FLASH, "f_sio2", "dato.f_sio2.label", "%", 25, 32, 29, 0.5,
+         "dato.f_sio2.meaning", "dato.f_sio2.source"),
+    Dato(FLASH, "f_loss", "dato.f_loss.label", "MJ/t", 150, 260, 205.5, 5,
+         "dato.f_loss.meaning", "dato.f_loss.source"),
+    Dato(FLASH, "f_temp", "dato.f_temp.label", "°C", 1250, 1325, 1300, 5,
+         "dato.f_temp.meaning", "dato.f_temp.source"),
+    Dato(CONV, "c_grade", "dato.c_grade.label", "% Cu", 50, 72, 62, 0.5,
+         "dato.c_grade.meaning", "dato.c_grade.source"),
+    Dato(CONV, "c_eff_slag", "dato.c_eff_slag.label", "%", 40, 95, 62, 1,
+         "dato.c_eff_slag.meaning", "dato.c_eff_slag.source"),
+    Dato(CONV, "c_eff_copper", "dato.c_eff_copper.label", "%", 50, 95, 77, 1,
+         "dato.c_eff_copper.meaning", "dato.c_eff_copper.source"),
+    Dato(CONV, "c_bath", "dato.c_bath.label", "°C", 1150, 1300, 1200, 10,
+         "dato.c_bath.meaning", "dato.c_bath.source"),
 )  # fmt: skip
 BY_KEY = {d.key: d for d in DATOS}
 
@@ -122,8 +118,10 @@ def _ask(d: Dato, container) -> float:
     key, label = PREFIX + d.key, f"{d.label} ({d.unit})" if d.unit else d.label
     if d.widget == "select":
         options = list(range(int(d.lo), int(d.hi) + 1))
-        return container.selectbox(label, options, int(d.default) - int(d.lo), key=key,
-                                   format_func=lambda v: f"Mezcla {v}", help=d.help)  # fmt: skip
+        labels = [t("blend", n=v) for v in options]  # el valor (1 a 4) se rotula aquí
+        chosen = container.selectbox(label, labels, int(d.default) - int(d.lo), key=key,
+                                     help=d.help)  # fmt: skip
+        return options[labels.index(chosen)]
     integer = float(d.default).is_integer() and float(d.step).is_integer()
     if integer and d.widget == "slider":
         return container.slider(label, int(d.lo), int(d.hi), int(d.default), int(d.step),
@@ -132,6 +130,21 @@ def _ask(d: Dato, container) -> float:
     if d.widget == "slider":
         return container.slider(label, lo, hi, v, step, help=d.help, key=key)
     return container.number_input(label, lo, hi, v, step, help=d.help, key=key)
+
+
+def _relabel_selects(previous: str) -> None:
+    """Al cambiar de idioma, la lista de mezclas conserva su elección: se pasa del rótulo del
+    idioma anterior al del idioma actual (el valor guardado en la sesión es el rótulo)."""
+    for d in DATOS:
+        key = PREFIX + d.key
+        if d.widget != "select" or key not in st.session_state:
+            continue
+        for n in range(int(d.lo), int(d.hi) + 1):
+            with use(previous):
+                old = t("blend", n=n)
+            if old == st.session_state[key]:
+                st.session_state[key] = t("blend", n=n)
+                break
 
 
 def reset_to_example() -> None:
@@ -143,10 +156,14 @@ def reset_to_example() -> None:
 def sidebar_config() -> tuple[FlotationParams, EWParams, FlashParams, ConverterParams]:
     """Lee la barra lateral y arma los parámetros de cada equipo."""
     sb = st.sidebar
-    sb.button("Cargar ejemplo", on_click=reset_to_example, width="stretch")
+    seen = st.session_state.get("_lang_seen")
+    if seen and seen != current():
+        _relabel_selects(seen)
+    st.session_state["_lang_seen"] = current()
+    sb.button(t("sidebar.example"), on_click=reset_to_example, width="stretch")
     v: dict[str, float] = {}
     for group in (FLOT, EW, FLASH, CONV):
-        with sb.expander(group, expanded=group == FLOT):
+        with sb.expander(t("group." + group), expanded=group == FLOT):
             for d in DATOS:
                 if d.equipo == group:
                     v[d.key] = _ask(d, st)
@@ -163,13 +180,13 @@ def data_table(equipo: str | None = None) -> pd.DataFrame:
     """La tabla «Qué datos necesita», hecha de las mismas definiciones que la barra lateral."""
     rows = [
         {
-            "Equipo": d.equipo,
-            "Dato": d.label,
-            "Unidad": d.unit,
-            "Rango": f"{_num(d.lo)} a {_num(d.hi)}",
-            "Ejemplo": _num(d.default),
-            "Qué es": d.meaning,
-            "Cómo se obtiene": d.source[0].upper() + d.source[1:],
+            t("col.equipo"): t("group." + d.equipo),
+            t("col.dato"): d.label,
+            t("col.unit"): d.unit,
+            t("col.range"): t("dato.range", lo=_num(d.lo), hi=_num(d.hi)),
+            t("col.example"): _num(d.default),
+            t("col.what"): d.meaning,
+            t("col.how"): d.source[0].upper() + d.source[1:],
         }
         for d in DATOS
         if equipo in (None, d.equipo)

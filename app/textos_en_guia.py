@@ -1,0 +1,163 @@
+"""English texts of the Guide, the sheet of each piece of equipment and the route map."""
+
+T = {
+    "ficha.label.hace": "**What it does.** {text}",
+    "ficha.label.entra": "**What goes in.** {text}",
+    "ficha.label.sale": "**What comes out.** {text}",
+    "ficha.expander": "What data this equipment needs",
+    "ficha.caption": "**Where the equations come from.** {autores} Details in [{doc}]({url}).",
+    "ficha.Flotación.hace": (
+        "Separates the copper mineral (chalcopyrite, CuFeS₂) from the gangue. The bubbles rise "
+        "loaded with hydrophobic particles and the froth that overflows each cell is the "
+        "concentrate; what does not float moves on from cell to cell and leaves as tailings."
+    ),
+    "ficha.Flotación.entra": (
+        "Pulp feeding the bank: CuFeS₂, SiO₂ (gangue) and water. The example is rougher bank A "
+        "of Los Pelambres: about 600 t/h of solids with 0.86 % Cu."
+    ),
+    "ficha.Flotación.sale": (
+        "Concentrate and tailings. By species: recovery to the concentrate and t/h that each "
+        "cell contributes; for the concentrate, the Cu grade and the t/h."
+    ),
+    "ficha.Flotación.autores": (
+        "First-order kinetics per species and perfectly mixed cells in series (García-Zúñiga, "
+        "1935; Klimpel, 1980). N-cell formulas and measured bank data: Vinnett, Pino-Muñoz, "
+        "Yianatos, Díaz and Henríquez (2022), *Physicochem. Probl. Miner. Process.* 58(5), "
+        "152420. The fixed recovery of SiO₂ (5 %) and of water (10 %) are assumptions of the "
+        "example, not measurements."
+    ),
+    "ficha.Flotación.doc": "docs/flotacion.md",
+    "ficha.Electroobtención.hace": (
+        "Deposits metallic copper on cathodes from a copper sulfate electrolyte; oxygen is "
+        "evolved at the anodes. It calculates how much copper is deposited and what voltage the "
+        "cell asks for."
+    ),
+    "ficha.Electroobtención.entra": (
+        "Electrolyte (Cu, sulfuric acid, temperature) and the current: current density times the "
+        "area of the two faces of the cathode."
+    ),
+    "ficha.Electroobtención.sale": (
+        "Deposited copper (kg per cathode at the end of the cycle, and its thickness), current, "
+        "cell voltage by component, power and energy per tonne of copper."
+    ),
+    "ficha.Electroobtención.autores": (
+        "Mass by Faraday's law with current efficiency. Cell voltage: Beukes and Badenhorst "
+        "(2009), *J. South. Afr. Inst. Min. Metall.* 109 (reversible potential and "
+        "overpotentials); electrolyte conductivity: Kalliomäki et al. (2021), *Miner. Eng.* 171, "
+        "107069; contacts and busbars: Schlesinger et al. (2011), *Extractive Metallurgy of "
+        "Copper*. Density of solid copper, 8.96 g/cm³: CRC Handbook of Chemistry and Physics."
+    ),
+    "ficha.Electroobtención.doc": "docs/ew.md",
+    "ficha.Horno flash.hace": (
+        "Smelts the dry concentrate in the oxygen-enriched air that falls down the reaction "
+        "shaft: the iron and sulfur oxidize, the heat of the reaction melts the charge and in "
+        "the settler the matte (Cu₂S-FeS, below) and the slag (on top) separate. The sulfur "
+        "leaves as SO₂."
+    ),
+    "ficha.Horno flash.entra": (
+        "One of the four concentrate blends of Atlantic Copper (Huelva), with targets for matte "
+        "grade, slag SiO₂ and heat loss; the model calculates the oxygen, the air enrichment "
+        "and the flux."
+    ),
+    "ficha.Horno flash.sale": (
+        "Per tonne of concentrate: kg of matte, slag and SO₂, Nm³ of technical O₂, % O₂ of the "
+        "air and % flux. From the drawing: volume of each layer (kg ÷ density)."
+    ),
+    "ficha.Horno flash.autores": (
+        "Mass and heat balance with the scheme of Bacedoni, Moreno-Ventas and Ríos (2020), "
+        "*Metals* 10(9) 1229 (mineralogy, Cu and Zn distribution, industrial operation); heat "
+        "content of mattes: González, Patiño and Salinas (2001), *Rev. Soc. Quím. Méx.* 45(1) "
+        "13. Densities, for drawing only: Cu₂S 5.18 and FeS 3.80 g/cm³ (Nagamori, 1968, cited "
+        "in Tesfaye Firdu and Taskinen, 2010, Aalto TKK-MT-215, Table 9), ideal mixture for the "
+        "matte (±10 %), slag 3.7 g/cm³ (approx.)."
+    ),
+    "ficha.Horno flash.doc": "docs/fusion.md",
+    "ficha.Convertidor.hace": (
+        "Converts the matte into copper by blowing air through the tuyeres. First the slag blow "
+        "oxidizes the iron (with silica flux it forms the slag) and leaves white metal (Cu₂S); "
+        "then the copper blow oxidizes the sulfur and leaves blister copper. Both release SO₂."
+    ),
+    "ficha.Convertidor.entra": (
+        "100 t of matte per charge, with its grade, and the efficiency with which each blow uses "
+        "the oxygen. The example uses public parameters of Ilo (illustrative)."
+    ),
+    "ficha.Convertidor.sale": (
+        "Per blow: air (Nm³), flux, slag, white metal or blister copper and SO₂ (t). From the "
+        "drawing: the volume of each phase (t ÷ density) in three states of the bath."
+    ),
+    "ficha.Convertidor.autores": (
+        "Element and heat balance of each blow, with data from Lennartsson (2013, thesis, "
+        "Luleå), Kyllo (1995, thesis, UBC; Flin Flon efficiencies) and Morales, Palacios and "
+        "Sánchez (2004, Molten Slags VII; Ilo slag). Densities, for drawing only: matte and "
+        "white metal by ideal Cu₂S-FeS mixture (Nagamori, 1968; ±10 %), blister copper = liquid "
+        "copper (Assael et al., 2010, *J. Phys. Chem. Ref. Data* 39, 033105, eq. 1), slag 3.7 "
+        "g/cm³ (approx.; the converter's, with magnetite, is denser)."
+    ),
+    "ficha.Convertidor.doc": "docs/conversion.md",
+    "limits.1": "Steady state: the bank and the cell do not change in time.",
+    "limits.2": (
+        "The flotation feed is fixed (that of the Los Pelambres example); the kinetics and the "
+        "operation of the bank are changed. The flash furnace smelts the four published blends "
+        "and the converter processes 100 t of matte per charge."
+    ),
+    "limits.3": (
+        "The electrowinning cell is calculated for one cathode with an electrolyte of fixed "
+        "composition; the deposit grows evenly (no nodules or dendrites)."
+    ),
+    "limits.4": (
+        "The animations are diagrams: the position of bubbles, the gangue entrainment, the O₂ "
+        "bubbles and the number of plates are illustrative. Each diagram says which part comes "
+        "from the calculation."
+    ),
+    "guide.h.simula": "### What it simulates",
+    "guide.simula": (
+        "Equipment of a copper plant, with **animations that come from the calculation**: they "
+        "are not loose drawings. Each diagram is built with the tonnes, the rates and the "
+        "thicknesses that the simulator calculates (`procesos`, published equations), and moves "
+        "the bubbles, the froth and the deposit according to those numbers. Change a datum in "
+        "the sidebar and the diagram changes."
+    ),
+    "guide.h.ruta": "### The path from the concentrate to the cathode",
+    "guide.ruta.alt": "Map of the path to the copper cathode",
+    "guide.ruta": (
+        "- **Animated here:** Flotation, Flash furnace, Converter and Electrowinning (the tabs "
+        "above).\n"
+        "- **Grinding:** it has its own animated app, the [comminution simulator]({conminucion}).\n"
+        "- **In the simulator, not animated yet:** anode furnace, electrorefining, leaching and "
+        "solvent extraction (in the [repository]({repo}))."
+    ),
+    "guide.h.leer": "### How to read a diagram",
+    "guide.leer": (
+        "Each diagram says, below it, which part comes from the calculation and which part is "
+        "illustrative. What comes from the calculation can be checked in the numbers beside it. "
+        "If your system asks for «reduce motion», you will see the still version; there is also "
+        "a switch."
+    ),
+    "guide.h.datos": "### What data it needs",
+    "guide.datos": (
+        "Each datum has a help (**?**) in the sidebar. The **Load example** button sets all the "
+        "values of the «Example» column."
+    ),
+    "guide.h.limites": "### What it does not do",
+    "route.title": "From ore to copper cathode: map of the equipment",
+    "route.pyro": "Pyrometallurgical route (sulfide concentrate)",
+    "route.hydro": "Hydrometallurgical route (leachable ore)",
+    "route.note": "Static map, no numbers. Bronze: animated in this app.",
+    "route.label": "Map of the path from the concentrate to the copper cathode",
+    "route.step.Molienda": "Grinding",
+    "route.step.Flotación": "Flotation",
+    "route.step.Fusión flash": "Flash smelting",
+    "route.step.Conversión": "Converting",
+    "route.step.Ánodos": "Anodes",
+    "route.step.Electrorrefinación": "Electrorefining",
+    "route.step.Mineral oxidado (chancado)": "Oxide ore (crushed)",
+    "route.step.Lixiviación": "Leaching",
+    "route.step.Extracción por solventes": "Solvent extraction",
+    "route.step.Electroobtención": "Electrowinning",
+    "route.step.Cátodo de Cu": "Cu cathode",
+    "route.state.animado": "animated",
+    "route.state.otra app": "other app",
+    "route.state.próximamente": "coming soon",
+    "route.state.en el repo": "in the repo",
+    "route.state.materia prima": "raw material",
+}

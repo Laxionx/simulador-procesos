@@ -7,6 +7,7 @@ import plotly.graph_objects as go
 from calculo import MEASURED_CELLS, MEASURED_CU_PCT, EWView, FlotationView
 from calculo_piro import ConverterView
 from dibujo import BRONZE, COPPER, INK, PAPER, STEEL, es
+from i18n import t, tm
 
 FONT = dict(family="Segoe UI, Helvetica, Arial, sans-serif", color=INK, size=13)
 COMPONENT_COLORS = {
@@ -35,18 +36,18 @@ def recovery_figure(view: FlotationView) -> go.Figure:
     fig = go.Figure()
     fig.add_trace(go.Scatter(
         x=cells, y=[100 * r for r in view.cu_cumulative], mode="lines+markers",
-        name="modelo (primer orden, mezcla perfecta)", line=dict(color=BRONZE, width=3),
+        name=t("plot.rec.model"), line=dict(color=BRONZE, width=3),
         marker=dict(size=7),
     ))  # fmt: skip
     fig.add_trace(go.Scatter(
         x=list(MEASURED_CELLS), y=list(MEASURED_CU_PCT), mode="markers",
-        name="medido, Vinnett et al. 2022 (banco A)",
+        name=t("plot.rec.measured"),
         marker=dict(size=11, symbol="diamond", color=INK, line=dict(color=PAPER, width=1.5)),
     ))  # fmt: skip
     top = max(view.params.cells, max(MEASURED_CELLS))
-    return _layout(fig, "Recuperación acumulada de Cu por celda", 400,
-                   x=dict(title="Celda", dtick=1, range=[0.5, top + 0.5]),
-                   y=dict(title="Cu recuperado acumulado (%)", range=[0, 102]))  # fmt: skip
+    return _layout(fig, t("plot.rec.title"), 400,
+                   x=dict(title=t("plot.rec.x"), dtick=1, range=[0.5, top + 0.5]),
+                   y=dict(title=t("plot.rec.y"), range=[0, 102]))  # fmt: skip
 
 
 def voltage_figure(view: EWView) -> go.Figure:
@@ -54,18 +55,19 @@ def voltage_figure(view: EWView) -> go.Figure:
     fig = go.Figure()
     for name, volts in view.result.components.items():
         fig.add_trace(go.Bar(
-            y=["Celda"], x=[volts], name=f"{name} ({es(volts, 2)} V)", orientation="h",
+            y=[t("plot.volt.cell")], x=[volts], name=f"{tm(name)} ({es(volts, 2)} V)",
+            orientation="h",
             marker=dict(color=COMPONENT_COLORS.get(name, COPPER)),
             text=[f"{es(volts, 2)} V"], textposition="inside", insidetextanchor="middle",
             textfont=dict(color="#FFFFFF"),
         ))  # fmt: skip
     fig.update_layout(barmode="stack")
     fig.update_layout(annotations=[dict(
-        text=f"Total: {es(view.result.cell_voltage, 2)} V", x=1, y=1.12, xref="paper",
+        text=t("plot.volt.total", v=es(view.result.cell_voltage, 2)), x=1, y=1.12, xref="paper",
         yref="paper", showarrow=False, xanchor="right", font=dict(family="Georgia, serif", size=15),
     )])  # fmt: skip
-    return _layout(fig, "De qué se compone el voltaje de la celda", 260,
-                   x=dict(title="Voltaje (V)", range=[0, view.result.cell_voltage * 1.02]),
+    return _layout(fig, t("plot.volt.title"), 260,
+                   x=dict(title=t("plot.volt.x"), range=[0, view.result.cell_voltage * 1.02]),
                    y=dict(showticklabels=False))  # fmt: skip
 
 
@@ -95,14 +97,14 @@ def converter_figure(view: ConverterView) -> go.Figure:
     concepts = list(dict.fromkeys(c for _, c, _ in rows))
     fig = go.Figure()
     for n, concept in enumerate(concepts):
-        bars = [(stage, t) for stage, c, t in rows if c == concept]
+        bars = [(stage, v) for stage, c, v in rows if c == concept]
         side = concept.split(":")[0]
         fig.add_trace(go.Bar(
-            x=[f"{stage} ({side})" for stage, _ in bars], y=[t for _, t in bars],
-            name=concept,
+            x=[f"{tm(stage)} ({tm(side)})" for stage, _ in bars], y=[v for _, v in bars],
+            name=tm(concept),
             marker=dict(color=colors[n % len(colors)]),
-            text=[es(t, 1) for _, t in bars], textposition="inside",
+            text=[es(v, 1) for _, v in bars], textposition="inside",
         ))  # fmt: skip
     fig.update_layout(barmode="stack")
-    return _layout(fig, "Qué entra y qué sale de cada soplado (t)", 420,
-                   x=dict(title=""), y=dict(title="Toneladas por 100 t de mata"))  # fmt: skip
+    return _layout(fig, t("plot.conv.title"), 420,
+                   x=dict(title=""), y=dict(title=t("plot.conv.y")))  # fmt: skip

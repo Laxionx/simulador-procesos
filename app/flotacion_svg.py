@@ -17,14 +17,15 @@ from dibujo import (
     GANGUE,
     INK,
     RISE_CSS,
-    SCHEME_NOTE,
     STEEL,
     WATER,
     es,
     rise,
+    scheme_note,
     svg,
     text,  # fmt: skip
 )
+from i18n import t
 
 W, H = 960, 520
 X0, X1 = 120.0, 880.0
@@ -121,16 +122,15 @@ def _legend(view: FlotationView) -> str:
     top = max(view.solids_t_h, default=0.0)
     y = H - 36
     items = [
-        (BRONZE, "CuFeS₂: ritmo de las burbujas ∝ k; las que llevan Cu, ∝ t/h de la celda"),
-        (GANGUE, "SiO₂: arrastre fijo, supuesto del ejemplo; reparto parejo entre celdas"),
+        (BRONZE, t("svg.flot.legend1")),
+        (GANGUE, t("svg.flot.legend2")),
     ]
     out = []
     for n, (color, label) in enumerate(items):
         out.append(f'<rect x="{X0}" y="{y - 10 + 16 * n}" width="12" height="12" fill="{color}"/>')
         out.append(text(X0 + 20, y + 16 * n, label, 12))
-    out.append(text(X1, y, f"Alto de la espuma ∝ t/h de sólidos (la mayor: {es(top)} t/h)", 12,
-                    "end"))  # fmt: skip
-    out.append(text(X1, y + 16, SCHEME_NOTE, 12, "end", color=STEEL))
+    out.append(text(X1, y, t("svg.flot.froth", top=es(top)), 12, "end"))
+    out.append(text(X1, y + 16, scheme_note(), 12, "end", color=STEEL))
     return "".join(out)
 
 
@@ -146,16 +146,16 @@ def _static(view: FlotationView, n: int) -> str:
     launder = (f'<path d="M {X0} {launder_y} L {X1 + 20} {launder_y}" stroke="{BRONZE}" '
                f'stroke-width="3" fill="none" stroke-dasharray="2 5"/>')  # fmt: skip
     labels = (
-        text(24, mid - 14, "Alimentación", 12)
-        + text(W - 30, mid - 14, "Relave", 12, "end")
-        + text(X1 + 20, launder_y - 18, "Concentrado →", 12, "end", color=BRONZE)
-        + text(X0 - 8, PULP_Y - FROTH_MAX_PX - 14, "t/h", 11, "end", color=STEEL)
-        + text(X0 - 8, PULP_Y + TANK_H + 20, "celda", 11, "end", color=STEEL)
-        + text(X0 - 8, PULP_Y + TANK_H + 38, "Cu acum.", 11, "end", color=STEEL)
+        text(24, mid - 14, t("svg.flot.feed"), 12)
+        + text(W - 30, mid - 14, t("svg.flot.tails"), 12, "end")
+        + text(X1 + 20, launder_y - 18, t("svg.flot.conc"), 12, "end", color=BRONZE)
+        + text(X0 - 8, PULP_Y - FROTH_MAX_PX - 14, t("svg.flot.th"), 11, "end", color=STEEL)
+        + text(X0 - 8, PULP_Y + TANK_H + 20, t("svg.flot.cell"), 11, "end", color=STEEL)
+        + text(X0 - 8, PULP_Y + TANK_H + 38, t("svg.flot.cuacc"), 11, "end", color=STEEL)
     )
-    title = text(24, 30, f"Banco de flotación: {n} celdas en serie", 18, cls="t") + text(
-        24, 50, f"Recuperación de Cu: {100 * view.recoveries['CuFeS2']:.1f} %  ·  concentrado: "
-        f"{es(view.concentrate_t_h)} t/h  ·  ley: {es(view.cu_grade_pct)} % Cu", 13)  # fmt: skip
+    title = text(24, 30, t("svg.flot.title", n=n), 18, cls="t") + text(
+        24, 50, t("svg.flot.sub", rec=es(100 * view.recoveries["CuFeS2"]),
+                  conc=es(view.concentrate_t_h), grade=es(view.cu_grade_pct)), 13)  # fmt: skip
     return arrows + launder + labels + title
 
 
@@ -167,5 +167,4 @@ def flotation_svg(view: FlotationView, paused: bool = False) -> str:
     cells = "".join(_cell(i, X0 + i * pitch + (pitch - w) / 2, w, view, heights[i],
                           view.params.k, paused) for i in range(n))  # fmt: skip
     body = _static(view, n) + cells + _legend(view)
-    return svg(W, H, body, paused, "Banco de flotación en serie con burbujas y espuma",
-               RISE_CSS)  # fmt: skip
+    return svg(W, H, body, paused, t("svg.flot.label"), RISE_CSS)
