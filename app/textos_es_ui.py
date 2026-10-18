@@ -7,6 +7,7 @@ T = {
         "Equipos animados según su cálculo real, desde ecuaciones publicadas. Empieza por la "
         "**Guía**; los datos se cambian en la barra lateral."
     ),
+    "err.generic": "Algo falló al calcular. Prueba con otros datos o recarga la página.",
     "toggle.label": "Mover los equipos",
     "toggle.help": (
         "Apaga las animaciones de los esquemas. También se apagan solas si el sistema tiene "
