@@ -170,7 +170,9 @@ Ver [docs/cadena.md](docs/cadena.md).
 
 ## App Planta completa
 
-App Streamlit didáctica: equipos metalúrgicos animados según su cálculo real (flotación en serie, horno flash, convertidor Peirce-Smith y celda de electroobtención), con una guía del recorrido del concentrado al cátodo. Las burbujas, la espuma y el depósito de cobre se dibujan con los números de `procesos.flotacion` y `procesos.ew`.
+App Streamlit didáctica: equipos metalúrgicos animados según su cálculo real (flotación en serie, horno flash, convertidor Peirce-Smith y celda de electroobtención), con una guía del recorrido del concentrado al cátodo. Las burbujas, la espuma, las capas del baño y el depósito de cobre se dibujan con los números de `procesos.flotacion`, `procesos.fusion`, `procesos.conversion` y `procesos.ew`.
+
+**[▶ Probar en el navegador](https://simulador-procesos-ntfmuyhlnqc9d73kkqljzk.streamlit.app/)** (Streamlit Community Cloud, sin registro).
 
 ```bash
 pip install -e ".[app]"
