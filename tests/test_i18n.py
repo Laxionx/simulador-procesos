@@ -399,3 +399,9 @@ def test_los_readme_se_enlazan_entre_si_y_los_gif_existen_y_pesan_menos_de_3_mb(
         gif = ROOT / "docs" / "img" / name
         assert gif.read_bytes()[:6] in (b"GIF89a", b"GIF87a")
         assert 0 < gif.stat().st_size < 3_000_000
+
+
+def test_el_ingles_usa_comillas_inglesas_y_no_las_espanolas():
+    bad = [k for k, v in EN.items() if "«" in v or "»" in v]
+    assert not bad, bad
+    assert not [x for x in _model_labels() if "«" in modelo_en.translate(x)]

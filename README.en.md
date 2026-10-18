@@ -15,13 +15,13 @@ python -m procesos resolver ejemplos/lixiviacion_oxidos_cu.yaml --salida salidas
 
 ```
 Planta: Lixiviación de óxidos de cobre
-  Controlador «Acidez libre»: 3,200.5820
+  Controlador "Acidez libre": 3,200.5820
   Convergió en 1 iteraciones · cortes: ninguno
   Balance por elemento (kg/h): ...
   Peor error de cierre: 1.15e-16
 ```
 
-(The command-line output and the YAML plant files are in Spanish; the «Full plant» app below has an English version.)
+(The command-line output and the YAML plant files are in Spanish; the "Full plant" app below has an English version.)
 
 ## What it does
 
@@ -32,7 +32,7 @@ Planta: Lixiviación de óxidos de cobre
   - separator by species (flotation, thickener, filter);
   - reactor with stoichiometry and conversion of a key component. If another reactant runs out, the extent is limited by it and the program reports it.
 - **Recycles:** the tear streams are chosen automatically and iterated with Wegstein.
-- **Control loops:** «adjust X until Y reaches the target». One loop is solved with Brent and several together. If the target is unreachable, it is reported with numbers.
+- **Control loops:** "adjust X until Y reaches the target". One loop is solved with Brent and several together. If the target is unreachable, it is reported with numbers.
 - **Guards:**
   - reactions that do not conserve atoms or charge are rejected when the plant is defined;
   - there are never negative flows;
@@ -185,7 +185,7 @@ pip install -e ".[app]"
 streamlit run app/streamlit_app.py
 ```
 
-For the cloud, `requirements.txt` is enough (pinned versions). The input data and the «What data it needs» table come from a single definition, `app/controles.py`; the texts of each language are in `app/textos_es*.py` and `app/textos_en*.py`.
+For the cloud, `requirements.txt` is enough (pinned versions). The input data and the "What data it needs" table come from a single definition, `app/controles.py`; the texts of each language are in `app/textos_es*.py` and `app/textos_en*.py`.
 
 ## HTML report and operating cost (phase 4)
 
