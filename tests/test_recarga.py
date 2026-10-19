@@ -44,13 +44,34 @@ def test_un_modulo_cambiado_se_ve_nuevo_tras_la_purga(paquete):
     assert nuevo is not uno and nuevo.NUEVO == 2  # el nombre nuevo se ve
 
 
-def test_un_modulo_sin_cambios_conserva_su_identidad(paquete):
+def test_si_cambia_un_modulo_se_quitan_todos_los_locales(paquete):
+    # Uno sin cambios puede guardar objetos armados con los de otro: se quitan todos.
     dos = importlib.import_module("rc_dos")
     importlib.import_module("rc_uno")
     recarga.purge_stale([paquete])
     _edit(paquete / "rc_uno.py", "VIEJO = 1\nNUEVO = 2\n")
-    assert recarga.purge_stale([paquete]) == ["rc_uno"]
-    assert importlib.import_module("rc_dos") is dos and sys.modules["rc_dos"] is dos
+    assert recarga.purge_stale([paquete]) == ["rc_dos", "rc_uno"]
+    assert importlib.import_module("rc_dos") is not dos
+
+
+def test_un_diccionario_armado_con_otro_modulo_se_rearma(paquete):
+    # El caso que tiró la app publicada: `i18n` arma TEXTS con los diccionarios de `textos_*`;
+    # si cambia solo `textos`, TEXTS tiene que verse con las claves nuevas.
+    (paquete / "rc_textos.py").write_text("T = {'a': 1}\n")
+    (paquete / "rc_i18n.py").write_text(
+        "from rc_textos import T as _T\n\nTEXTS = {'es': dict(_T)}\n"
+    )
+    importlib.invalidate_caches()
+    try:
+        assert "b" not in importlib.import_module("rc_i18n").TEXTS["es"]
+        recarga.purge_stale([paquete])
+        _edit(paquete / "rc_textos.py", "T = {'a': 1, 'b': 2}\n")
+        assert "rc_i18n" in recarga.purge_stale([paquete])
+        assert importlib.import_module("rc_i18n").TEXTS["es"]["b"] == 2
+    finally:
+        for name in ("rc_textos", "rc_i18n"):
+            sys.modules.pop(name, None)
+            recarga._LOADED.pop(name, None)
 
 
 def test_sin_cambios_ninguna_corrida_quita_nada(paquete):
@@ -98,6 +119,26 @@ def test_los_modulos_de_fuera_de_las_carpetas_no_se_tocan(paquete, tmp_path_fact
     _edit(paquete / "rc_dos.py", "DOS = 3\n")
     assert recarga.purge_stale([otra]) == []
     assert sys.modules["rc_dos"].DOS == 2
+
+
+def test_el_punto_de_entrada_reemplaza_un_recarga_viejo(tmp_path, monkeypatch):
+    # La app desplegada tiene en memoria el `recarga` VIEJO (sin LOADED_AT): el punto de entrada,
+    # que se relee en cada corrida, debe quitarlo junto con todos los módulos locales.
+    import types
+
+    entrada = importlib.import_module("streamlit_app")  # como módulo: no corre la app
+    viejo_file, local_file = tmp_path / "recarga.py", tmp_path / "rc_local.py"
+    viejo_file.write_text("# viejo\n")
+    local_file.write_text("X = 1\n")
+    viejo, local = types.ModuleType("recarga"), types.ModuleType("rc_local")
+    viejo.__file__, local.__file__ = str(viejo_file), str(local_file)
+    monkeypatch.setitem(sys.modules, "recarga", viejo)
+    monkeypatch.setitem(sys.modules, "rc_local", local)
+    assert entrada.purge_if_loader_changed([tmp_path]) is True
+    assert "recarga" not in sys.modules and "rc_local" not in sys.modules
+    monkeypatch.setitem(sys.modules, "recarga", recarga)  # el actual tiene LOADED_AT
+    assert entrada.purge_if_loader_changed([ROOT / "app"]) is False
+    assert sys.modules["recarga"] is recarga
 
 
 # ------------------------------------------------------------------ errores sin traza

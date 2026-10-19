@@ -3,16 +3,19 @@
 Streamlit relee el script principal en cada corrida, pero deja en `sys.modules` los módulos que
 ese script importó. Si el servidor sigue despierto cuando se publica una versión nueva, el script
 nuevo se encuentra con los módulos VIEJOS de `app/` y falla (por ejemplo, un `ImportError` por un
-nombre que el módulo viejo no tiene). `purge_stale` quita de `sys.modules` los módulos locales cuyo
-archivo cambió después de cargarse, para que la corrida los importe de nuevo.
+nombre que el módulo viejo no tiene, o un `KeyError` porque `i18n` armó su diccionario con los
+textos viejos). `purge_stale` lo evita: si CUALQUIER módulo local cambió en disco después de
+cargarse, quita de `sys.modules` TODOS los módulos locales, y la corrida los importa de nuevo.
 
-- Solo se quitan los que cambiaron y los que dependen de ellos (los que guardan nombres traídos de
-  un módulo quitado): un módulo sin cambios ni dependencias conserva su identidad y sus cachés
-  (`lru_cache`, estado), así que en las corridas normales no se pierde nada.
+- Todos y no solo los cambiados: un módulo sin cambios puede guardar objetos armados con los de
+  otro (un diccionario, una clase), y eso no se puede rastrear con seguridad. Publicar es raro;
+  perder las cachés (`lru_cache`, estado) una vez por publicación no cuesta nada.
+- Sin cambios, no se quita nada: cada módulo conserva su identidad y sus cachés.
 - No usa `importlib.reload` en cadena: se borra la entrada y el próximo `import` carga el archivo.
 - «Cuándo se cargó» un módulo: el momento en que este módulo lo vio por primera vez, o, si ya
-  estaba cargado desde antes (un servidor que arrancó con una versión sin este archivo), la fecha
-  de su `.pyc`, que se escribió al importarlo.
+  estaba cargado desde antes, la fecha de su `.pyc`, que se escribió al importarlo.
+- `LOADED_AT` marca cuándo se cargó ESTE archivo: el punto de entrada lo compara con la fecha del
+  archivo para saber si `recarga.py` mismo cambió (ver `streamlit_app.py`).
 """
 
 from __future__ import annotations
@@ -24,13 +27,13 @@ from collections.abc import Iterable
 from pathlib import Path
 from types import ModuleType
 
-_LOADED: dict[
-    str, float
-] = {}  # nombre del módulo -> momento (s) en que se cargó, para todo el proceso
+LOADED_AT = time.time()  # cuándo se cargó este módulo
+_LOADED: dict[str, float] = {}  # nombre del módulo -> momento (s) en que se cargó
 
 
-def _local_modules(folders: list[Path]) -> dict[str, Path]:
-    """Módulos cargados cuyo archivo está dentro de alguna de las carpetas."""
+def local_modules(folders: Iterable[str | Path]) -> dict[str, Path]:
+    """Módulos cargados cuyo archivo está dentro de alguna de las carpetas (sin este)."""
+    roots = [Path(f).resolve() for f in folders]
     found: dict[str, Path] = {}
     for name, module in list(sys.modules.items()):
         if name == __name__ or module is None:
@@ -39,7 +42,7 @@ def _local_modules(folders: list[Path]) -> dict[str, Path]:
         if not file:
             continue
         path = Path(file).resolve()
-        if any(path.is_relative_to(folder) for folder in folders):
+        if any(path.is_relative_to(root) for root in roots):
             found[name] = path
     return found
 
@@ -53,42 +56,29 @@ def _loaded_at(module: ModuleType) -> float:
         return time.time()
 
 
-def _depends_on(module: ModuleType, names: set[str]) -> bool:
-    """¿Guarda el módulo algún módulo o nombre (clase, función) traído de `names`?"""
-    for value in list(vars(module).values()):
-        try:
-            origin = value.__name__ if isinstance(value, ModuleType) else value.__module__
-        except Exception:  # objetos raros: no son una dependencia que se pueda rastrear
-            continue
-        if origin in names:
-            return True
-    return False
-
-
-def purge_stale(folders: Iterable[str | Path]) -> list[str]:
-    """Quita de `sys.modules` los módulos de `folders` que cambiaron en disco (y los que dependen
-    de ellos). Devuelve los nombres quitados."""
-    roots = [Path(f).resolve() for f in folders]
-    local = _local_modules(roots)
-    stale: set[str] = set()
-    for name, path in local.items():
-        loaded = _LOADED.setdefault(name, _loaded_at(sys.modules[name]))
-        try:
-            if path.stat().st_mtime > loaded:
-                stale.add(name)
-        except OSError:
-            continue
-    grew = bool(stale)
-    while grew:  # los que dependen de uno quitado también se quitan, hasta que no haya más
-        grew = False
-        for name in local.keys() - stale:
-            if _depends_on(sys.modules[name], stale):
-                stale.add(name)
-                grew = True
-    for name in sorted(stale):
+def drop(names: Iterable[str]) -> None:
+    """Quita los módulos de `sys.modules` y el atributo del paquete padre, para que
+    `from paquete import sub` no vea el módulo viejo."""
+    for name in sorted(names):
         sys.modules.pop(name, None)
         _LOADED.pop(name, None)
         parent, _, child = name.rpartition(".")
         if parent and parent in sys.modules and hasattr(sys.modules[parent], child):
-            delattr(sys.modules[parent], child)  # `from paquete import sub` no debe ver el viejo
-    return sorted(stale)
+            delattr(sys.modules[parent], child)
+
+
+def purge_stale(folders: Iterable[str | Path]) -> list[str]:
+    """Si algún módulo de `folders` cambió en disco desde que se cargó, quita TODOS los módulos
+    de `folders` y devuelve sus nombres; si ninguno cambió, no quita nada."""
+    local = local_modules(folders)
+    changed = False
+    for name, path in local.items():
+        loaded = _LOADED.setdefault(name, _loaded_at(sys.modules[name]))
+        try:
+            changed = changed or path.stat().st_mtime > loaded
+        except OSError:
+            continue
+    if not changed:
+        return []
+    drop(local)
+    return sorted(local)

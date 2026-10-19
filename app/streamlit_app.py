@@ -25,6 +25,30 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "app"))
 
+FOLDERS = [ROOT / "app", ROOT / "procesos"]  # los módulos locales que se recargan
+
+
+def purge_if_loader_changed(folders: list[Path]) -> bool:
+    """Si `recarga.py` mismo cambió desde que se cargó (o es una versión vieja sin `LOADED_AT`),
+    quita todos los módulos locales, incluido él, antes de importarlo. Va aquí y no en
+    `recarga.py` porque este script se relee en cada corrida y `recarga` no."""
+    old = sys.modules.get("recarga")
+    if old is None:
+        return False
+    try:
+        changed = Path(old.__file__).stat().st_mtime > getattr(old, "LOADED_AT", 0.0)
+    except (OSError, TypeError):
+        changed = True
+    if changed:
+        roots = [f.resolve() for f in folders]
+        for name, module in list(sys.modules.items()):
+            file = getattr(module, "__file__", None)
+            if file and any(Path(file).resolve().is_relative_to(r) for r in roots):
+                sys.modules.pop(name, None)
+    return changed
+
+
+purge_if_loader_changed(FOLDERS)
 from recarga import purge_stale  # noqa: E402
 
 # Texto fijo para cuando ni siquiera se pudieron cargar las traducciones.
@@ -48,7 +72,7 @@ def _show_error() -> None:
 
 def _start() -> None:
     try:
-        purge_stale([ROOT / "app", ROOT / "procesos"])
+        purge_stale(FOLDERS)
         runpy.run_path(str(ROOT / "app" / "principal.py"), run_name="principal")
     except Exception:
         logging.getLogger("app").exception("fallo en la app")  # el detalle, solo en el log
@@ -59,4 +83,5 @@ def _start() -> None:
         _show_error()
 
 
-_start()
+if __name__ == "__main__":  # Streamlit corre este script como __main__
+    _start()
