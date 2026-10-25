@@ -109,6 +109,7 @@ python -m procesos resolver ejemplos/sx_ew_circuito.yaml
 
 The `flotacion` equipment replaces the fixed recovery with first-order kinetics per species (a single constant or Klimpel's rectangular distribution) in a bank of cells in series. `python -m procesos ajustar` fits the kinetics to a batch test or to the profile of a bank.
 - Validated with the industrial rougher banks of Los Pelambres (Vinnett et al. 2022, open access). With their parameters it reproduces their modeled recoveries to 0.4 points or less. Fitting their measured recoveries it obtains their parameters: R∞ to 0.1 points and k to 1.3 % or less.
+- Also validated with three copper batch tests from Vinnett et al. (2025, CC BY): it reproduces the 8-minute recovery of their scale-up and their conclusions on the rectangular model.
 - **From laboratory to pilot** (Minerals 16(7):726, 2026, with two-component Kelsall kinetics): it predicts the Cu grade of the concentrate (+4 %), but not the pyrite or the gangue. 5 of 9 comparisons fall outside and it does not pass the threshold. The authors' own simulation cannot be reproduced with what was published. The scale-up factor is calibrated with the plant (Vallejos 2023: from 0.8 to 15.7).
 
 See [docs/flotacion.md](docs/flotacion.md) (in Spanish).

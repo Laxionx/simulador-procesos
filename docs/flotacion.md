@@ -125,6 +125,32 @@ El rendimiento del concentrado da 7,79 %, frente a 7,92 % en la simulación de l
    sin calibrar. El factor de escalamiento fue de 2,5 en una planta chilena y de 0,8 y 15,7 en
    otras dos. `factor_escalamiento` es un dato de la planta.
 
+## Cinética batch: Vinnett et al. (2025)
+
+Segundo conjunto abierto de flotación batch: Vinnett, Esteban, Orellana, Rivera y Benítez (2025),
+Minerals 15(6), 583, CC BY. Tabla 1: tres ensayos de cobre con P80 de 150, 212 y 300 µm,
+recuperación media de 0,5 a 32 min. Los parámetros que ajustaron los autores están solo en
+figuras, así que se comprueba lo que el texto da en cifras y sus conclusiones
+([tests/test_flotacion_vinnett2025.py](../tests/test_flotacion_vinnett2025.py)). Cortes fijados
+antes de correr:
+
+| Corte | Publicado | Calculado | ¿Cuadra? |
+|---|---|---|---|
+| Recuperación a 8 min (base del escalamiento por tiempos de los autores) | 83 / 75 / 70 % | 82,8 / 74,8 / 69,6 % | sí, 3/3 |
+| El rectangular ajusta mejor que el primer orden | «adecuado» para esta mena | error medio 1,66 / 0,83 / 0,89 puntos frente a 4,08 / 2,93 / 1,83 | sí, 3/3 |
+| Rectangular: omitir el primer intervalo es lo que más mueve R∞ | los primeros intervalos mandan | el 1.º en los tres ensayos | sí, 3/3 |
+| Primer orden: manda uno de los dos primeros intervalos | «en la mayoría de los casos» | el 1.º con P80 150; el 3.º con 212 y 300 | 1/3 (fallo esperado) |
+
+El fallo del primer orden tiene una explicación probable: los autores miran también la forma de
+la distribución de k, y aquí solo R∞.
+
+Parámetros con los 7 puntos (R∞ y k en 1/min; kmax en el rectangular): P80 150 µm, primer orden
+84,3 % y 1,553, rectangular 87,0 % y 3,830; P80 212 µm, 77,0 % y 1,122, 79,8 % y 2,696; P80 300 µm,
+71,5 % y 1,245, 74,1 % y 2,970.
+
+Informativo, sin corte: llevado a 6 celdas de 3,33 min (20 min), el rectangular da 85,6 / 78,0 /
+72,6 %, entre 1,5 y 3 puntos sobre el atajo por tiempos de los autores (83 / 75 / 70 %).
+
 ## Ejemplo
 
 `ejemplos/flotacion_pelambres.yaml`: el banco A con su cinética publicada recupera 94,0 % del Cu;
