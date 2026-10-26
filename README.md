@@ -49,6 +49,17 @@ Además, 3 plantas reales publicadas: la producción de Constancia (Hudbay), el 
 python -m pytest --cov=procesos
 ```
 
+### Al cambiar código: de lo barato a lo caro
+
+| Paso | Comando | Tarda | Qué atrapa |
+|---|---|---|---|
+| 1. Revisar sin ejecutar | `ruff check . && basedpyright` | ~20 s | nombres y tipos; basedpyright avisa solo los errores **nuevos** (los 54 previos están en `.basedpyright/baseline.json`) |
+| 2. Pruebas sin la app | `pytest -m "not app" -x` | ~40 s | 683 pruebas: modelos, validaciones, cálculos de la app y claves de los dos idiomas |
+| 3. Suite completa | `pytest` | ~3 min | todo; obligatoria antes de cada commit |
+| 4. CI | al hacer push | | Python 3.12 y 3.13 con instalación limpia |
+
+Una prueba nueva que abre la app lleva `@pytest.mark.app`. La escalera se probó con 5 errores plantados (dos modelos del paquete, un cálculo de la app, una clave de texto y un atributo mal escrito): los pasos 1 y 2 atraparon los 5, en 30 a 50 s.
+
 ## Balance de calor (fase 2)
 
 Con `balance_de_calor: true` en el YAML, cada equipo cierra también la energía. Los datos son públicos: NIST-JANAF, USGS y CODATA.

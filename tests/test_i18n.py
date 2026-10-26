@@ -138,6 +138,7 @@ def test_los_textos_en_ingles_no_llevan_palabras_en_espanol():
 
 
 # ------------------------------------------------------------------ el idioma y la URL
+@pytest.mark.app
 @pytest.mark.parametrize("value", ["fr", "EN", "es ", "", "en;alert(1)", "<script>", "../en"])
 def test_un_parametro_lang_invalido_es_espanol_sin_error(value):
     at = run(value)
@@ -152,6 +153,7 @@ def test_parse_lang_solo_acepta_es_y_en():
     assert {i18n.parse_lang(v) for v in ("fr", None, 3, ["en"], "EN", " en")} == {"es"}
 
 
+@pytest.mark.app
 def test_lang_en_en_la_url_abre_en_ingles_y_el_selector_cambia_el_idioma():
     en = run("en")
     assert [t.label for t in en.tabs] == [
@@ -166,12 +168,14 @@ def test_lang_en_en_la_url_abre_en_ingles_y_el_selector_cambia_el_idioma():
     assert es_.tabs[0].label == "Guide" and not es_.exception
 
 
+@pytest.mark.app
 def test_el_valor_de_lang_nunca_llega_al_html_ni_al_svg():
     at = run("en<script>alert(1)</script>")
     blob = json.dumps([m.value for m in at.markdown] + [c.value for c in at.caption])
     assert "alert(1)" not in blob and "<script" not in blob.lower()
 
 
+@pytest.mark.app
 def test_los_datos_y_la_mezcla_se_conservan_al_cambiar_de_idioma():
     at = run("es", tau=6.0, blend=3)
     at.sidebar.radio[0].set_value("en").run()
@@ -184,6 +188,7 @@ def test_los_datos_y_la_mezcla_se_conservan_al_cambiar_de_idioma():
 
 
 # ------------------------------------------------------------------ humo de todas las pestañas
+@pytest.mark.app
 @pytest.mark.parametrize("lang", ["es", "en"])
 def test_humo_de_todas_las_pestanas(lang):
     at = run(lang)
@@ -192,6 +197,7 @@ def test_humo_de_todas_las_pestanas(lang):
     assert len(at.sidebar.expander) == 4
 
 
+@pytest.mark.app
 @pytest.mark.parametrize("lang", ["es", "en"])
 def test_humo_con_extremos_y_avisos_de_la_celda(lang):
     at = run(lang, cu=21.0, acid=219.0, temp=64.0, j=399.0, blend=4)
@@ -228,6 +234,7 @@ def _figures(at: AppTest, lang: str) -> list:
     return out
 
 
+@pytest.mark.app
 @pytest.mark.parametrize(
     "values",
     [
@@ -369,6 +376,7 @@ def test_los_avisos_reales_de_la_celda_no_quedan_en_espanol():
     assert all(not spanish_left(w) for w in translated), translated
 
 
+@pytest.mark.app
 @pytest.mark.parametrize("lang", ["es", "en"])
 def test_un_error_del_modelo_se_muestra_sin_traza_en_los_dos_idiomas(monkeypatch, lang):
     def fails(params):

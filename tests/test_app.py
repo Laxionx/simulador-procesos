@@ -22,6 +22,7 @@ def _widgets(at: AppTest) -> list:
     return [*at.sidebar.number_input, *at.sidebar.slider, *at.sidebar.selectbox]
 
 
+@pytest.mark.app
 def test_las_pestanas_cargan_sin_excepciones():
     at = AppTest.from_file(APP, default_timeout=120).run()
     assert not at.exception
@@ -38,6 +39,7 @@ def test_las_pestanas_cargan_sin_excepciones():
     assert values["Fundente (t)"] == "6,6"  # convertidor, ejemplo de Ilo
 
 
+@pytest.mark.app
 def test_los_controles_salen_de_la_misma_definicion_que_la_tabla():
     at = AppTest.from_file(APP, default_timeout=120).run()
     widgets = {w.key: w for w in _widgets(at)}
@@ -69,6 +71,7 @@ def test_markdown_table_escapa_barras():
     assert "\\|" in markdown_table(pd.DataFrame({"a": ["x|y"]}))
 
 
+@pytest.mark.app
 @pytest.mark.parametrize("extreme", ["min", "max"])
 def test_controles_en_los_extremos_no_tumban_la_app(extreme):
     at = AppTest.from_file(APP, default_timeout=120).run()
@@ -81,6 +84,7 @@ def test_controles_en_los_extremos_no_tumban_la_app(extreme):
     assert not at.exception
 
 
+@pytest.mark.app
 @pytest.mark.parametrize("value", [10_000_000, -5, float("inf"), float("nan")])
 def test_el_servidor_rechaza_valores_fuera_de_rango(value):
     # Un cliente puede mandar valores sin pasar por el navegador: Streamlit (versión fijada en
@@ -99,6 +103,7 @@ def test_el_servidor_rechaza_valores_fuera_de_rango(value):
     ]
 
 
+@pytest.mark.app
 def test_un_fallo_del_modelo_se_muestra_sin_traza(monkeypatch):
     import calculo
 
@@ -111,6 +116,7 @@ def test_un_fallo_del_modelo_se_muestra_sin_traza(monkeypatch):
     assert any("composición fuera de rango" in e.value for e in at.error)
 
 
+@pytest.mark.app
 @pytest.mark.parametrize("blend", [1, 2, 3, 4])
 def test_las_cuatro_mezclas_del_horno_cargan(blend):
     at = AppTest.from_file(APP, default_timeout=120).run()
@@ -119,6 +125,7 @@ def test_las_cuatro_mezclas_del_horno_cargan(blend):
     assert any(m.label == "Mata (kg/t de concentrado)" for m in at.metric)
 
 
+@pytest.mark.app
 def test_un_fallo_del_horno_o_del_convertidor_se_muestra_sin_traza(monkeypatch):
     import calculo_piro
 

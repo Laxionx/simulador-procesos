@@ -162,6 +162,7 @@ def _run(lang: str | None = None) -> AppTest:
     return at.run()
 
 
+@pytest.mark.app
 @pytest.mark.parametrize(
     "lang,message",
     [
@@ -183,6 +184,7 @@ def test_un_fallo_inesperado_muestra_solo_el_mensaje_generico(monkeypatch, lang,
     assert not [word for word in SECRETS if word in text]
 
 
+@pytest.mark.app
 @pytest.mark.parametrize("lang", ["es", "en"])
 def test_un_importerror_al_arrancar_muestra_el_mensaje_generico(monkeypatch, lang):
     monkeypatch.setitem(sys.modules, "graficos", None)  # `import graficos` falla
@@ -194,6 +196,7 @@ def test_un_importerror_al_arrancar_muestra_el_mensaje_generico(monkeypatch, lan
     assert not [word for word in SECRETS if word in _page_text(at)]
 
 
+@pytest.mark.app
 def test_si_ni_las_traducciones_cargan_el_mensaje_es_bilingue(monkeypatch):
     monkeypatch.setitem(sys.modules, "i18n", None)
     at = _run()
@@ -202,6 +205,7 @@ def test_si_ni_las_traducciones_cargan_el_mensaje_es_bilingue(monkeypatch):
     assert not [word for word in SECRETS if word in _page_text(at)]
 
 
+@pytest.mark.app
 def test_los_errores_controlados_de_la_app_se_siguen_mostrando(monkeypatch):
     """Un fallo inesperado no oculta los avisos propios: la página normal no trae el genérico."""
     at = _run("en")

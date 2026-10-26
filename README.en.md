@@ -51,6 +51,17 @@ In addition, 3 real published plants: the production of Constancia (Hudbay), the
 python -m pytest --cov=procesos
 ```
 
+### When changing code: cheap checks first
+
+| Step | Command | Time | What it catches |
+|---|---|---|---|
+| 1. Check without running | `ruff check . && basedpyright` | ~20 s | names and types; basedpyright reports only **new** errors (the 54 earlier ones are in `.basedpyright/baseline.json`) |
+| 2. Tests without the app | `pytest -m "not app" -x` | ~40 s | 683 tests: models, validations, app calculations and the keys of both languages |
+| 3. Full suite | `pytest` | ~3 min | everything; required before every commit |
+| 4. CI | on push | | Python 3.12 and 3.13 with a clean install |
+
+A new test that opens the app gets `@pytest.mark.app`. The ladder was tested with 5 planted bugs (two package models, an app calculation, a text key and a misspelled attribute): steps 1 and 2 caught all 5, in 30 to 50 s.
+
 ## Heat balance (phase 2)
 
 With `balance_de_calor: true` in the YAML, each piece of equipment also closes the energy. The data are public: NIST-JANAF, USGS and CODATA.

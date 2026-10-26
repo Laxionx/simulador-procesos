@@ -13,7 +13,7 @@ authors = [{ name = "Anthony Vera Baldeón" }]
 dependencies = ["numpy", "scipy", "pyyaml", "openpyxl"]
 
 [project.optional-dependencies]
-dev = ["pytest", "pytest-cov", "ruff"]
+dev = ["pytest", "pytest-cov", "basedpyright", "ruff"]
 equilibrio = ["phreeqpy>=0.6"]
 app = ["streamlit==1.65.0", "plotly==7.1.0"]
 molienda = ["conminucion @ git+https://github.com/Laxionx/simulador-conminucion.git@57feb274442b4ce7b2650a0ace05a747d08170ce"]
@@ -37,9 +37,16 @@ select = ["E", "F", "I", "UP", "B"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-q"
+markers = ["app: corre la app entera con AppTest (lenta); `-m \"not app\"` las deja fuera"]
 
 [tool.coverage.run]
 source = ["procesos"]
+
+[tool.basedpyright]
+include = ["procesos", "app"]
+extraPaths = ["app"]  # la app importa sus módulos por nombre, como en Streamlit Cloud
+pythonVersion = "3.10"
+typeCheckingMode = "basic"
 
 [tool.ruff.lint.per-file-ignores]
 "app/textos_*.py" = ["E501"]  # son diccionarios de texto: una línea larga es una frase
