@@ -9,6 +9,10 @@ T = {
     "svg.flot.label": "Banco de flotación en serie con burbujas y espuma",
     "svg.flot.legend1": "CuFeS₂: ritmo de las burbujas ∝ k; las que llevan Cu, ∝ t/h de la celda",
     "svg.flot.legend2": "SiO₂: arrastre fijo, supuesto del ejemplo; reparto parejo entre celdas",
+    "svg.flot.ilus": (
+        "Posición y velocidad absoluta de las burbujas, tamaño de las celdas y ritmo de la "
+        "ganga: ilustrativos, solo cambia el dibujo."
+    ),
     "svg.flot.froth": "Alto de la espuma ∝ t/h de sólidos (la mayor: {top} t/h)",
     "svg.flot.feed": "Alimentación",
     "svg.flot.tails": "Relave",
@@ -37,8 +41,12 @@ T = {
         "(aprox.)."
     ),
     "svg.flash.legend2": (
-        "Grosor de las flechas ∝ caudal calculado. Color de las capas: {note} de los productos "
-        "({temp} °C). Llama y partículas en la torre: ilustrativas."
+        "Grosor de las flechas de O₂ y de gases, y rapidez de sus rayitas, ∝ caudal calculado. "
+        "Color de las capas: {note} de los productos ({temp} °C)."
+    ),
+    "svg.flash.ilus": (
+        "Partículas de la torre (ritmo fijo), flecha del concentrado (grosor y rapidez fijos) y "
+        "forma del horno: ilustrativas, solo cambia el dibujo."
     ),
     # ------------------------------------------------------------ convertidor
     "svg.conv.title": "Convertidor Peirce-Smith, corte transversal",
@@ -57,9 +65,9 @@ T = {
         "(aprox.: la del convertidor, con magnetita, es más densa)."
     ),
     "svg.conv.legend2": (
-        "El bucle de {cycle} s pasa por tres estados del cálculo; la transición entre ellos, "
-        "las burbujas de las toberas y la forma son ilustrativas. Grosor del aire ∝ Nm³ y del "
-        "SO₂ ∝ t de cada soplado. Color: {note} del baño ({temp} °C)."
+        "El bucle de {cycle} s pasa por tres estados del cálculo. La transición entre "
+        "estados, las burbujas de las toberas y la forma son ilustrativas: solo cambia el dibujo. "
+        "Grosor del aire ∝ Nm³ y del SO₂ ∝ t de cada soplado. Color: {note} del baño ({temp} °C)."
     ),
     # ------------------------------------------------------------ electroobtención
     "svg.ew.title": "Celda de electroobtención en corte",
@@ -73,7 +81,10 @@ T = {
     "svg.ew.day": "{n} día(s)",
     "svg.ew.legend1": (
         "Ciclo de cosecha de {days} comprimido en {cycle} s; depósito dibujado con {px} px por "
-        "mm real (exagerado). Celeste: electrolito."
+        "mm real (exagerado: solo cambia el dibujo). Celeste: electrolito."
     ),
-    "svg.ew.legend2": "Burbujas de O₂ en los ánodos: ilustrativas. Placas dibujadas: 6 ánodos y 5 cátodos.",
+    "svg.ew.legend2": (
+        "Burbujas de O₂ en los ánodos y número de placas (6 ánodos y 5 cátodos): ilustrativas, "
+        "solo cambia el dibujo."
+    ),
 }

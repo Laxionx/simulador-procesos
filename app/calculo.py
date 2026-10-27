@@ -19,6 +19,10 @@ MODEL = "primer_orden"
 # Recuperación acumulada de Cu medida celda a celda en el banco A (Vinnett et al. 2022, Tabla B1).
 MEASURED_CELLS = (1, 3, 5, 7, 9)
 MEASURED_CU_PCT = (55.5, 86.7, 91.9, 94.2, 94.7)
+# Banco B (6 celdas de 250 m³, τ de 6,4 min): Vinnett et al. 2022, Tabla B2; su ajuste de primer
+# orden con mezcla perfecta es la Tabla 3 (R∞ 93,3 %, k 0,27 1/min). Ver docs/flotacion.md.
+MEASURED_B_CELLS = (1, 2, 3, 4, 5, 6)
+MEASURED_B_CU_PCT = (60.1, 81.2, 86.6, 90.5, 94.2, 94.2)
 CU_IN_CHALCOPYRITE = 63.546 / (63.546 + 55.845 + 2 * 32.06)  # fracción másica de Cu en CuFeS2
 FLOTATION_CATALOG = Catalog([make_species("CuFeS2", phase="s"), make_species("SiO2", phase="s"),
                              make_species("H2O", phase="l")])  # fmt: skip
@@ -57,6 +61,22 @@ class FlotationView:
         """% de Cu en el concentrado (Cu contenido en la calcopirita ÷ sólidos del concentrado)."""
         total = self.concentrate_t_h
         return 100.0 * CU_IN_CHALCOPYRITE * sum(self.cu_t_h) / total if total > 0 else 0.0
+
+    @property
+    def feed_cu_grade_pct(self) -> float:
+        """% de Cu en la alimentación (sus sólidos son CuFeS₂ y SiO₂)."""
+        solids = self.feed_t_h["CuFeS2"] + self.feed_t_h["SiO2"]
+        return 100.0 * CU_IN_CHALCOPYRITE * self.feed_t_h["CuFeS2"] / solids
+
+    @property
+    def enrichment(self) -> float:
+        """Razón de enriquecimiento: ley de Cu del concentrado ÷ ley de la alimentación."""
+        return self.cu_grade_pct / self.feed_cu_grade_pct
+
+    @property
+    def cu_tails_t_h(self) -> float:
+        """CuFeS₂ que se va al relave (t/h): lo que no flotó."""
+        return self.feed_t_h["CuFeS2"] * (1.0 - self.recoveries["CuFeS2"])
 
 
 def fixed_split(total_recovery: float, cells: int) -> list[float]:

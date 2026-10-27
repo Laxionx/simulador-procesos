@@ -6,6 +6,7 @@ from __future__ import annotations
 import plotly.graph_objects as go
 from calculo import MEASURED_CELLS, MEASURED_CU_PCT, EWView, FlotationView
 from calculo_piro import ConverterView
+from casos import CasoFlot
 from dibujo import BRONZE, COPPER, INK, PAPER, STEEL, es
 from i18n import t, tm
 
@@ -30,9 +31,13 @@ def _layout(fig: go.Figure, title: str, height: int, **axes: dict) -> go.Figure:
     return fig
 
 
-def recovery_figure(view: FlotationView) -> go.Figure:
-    """Recuperación acumulada de Cu tras cada celda (modelo) y los puntos medidos del banco A."""
+def recovery_figure(view: FlotationView, caso: CasoFlot | None = None) -> go.Figure:
+    """Recuperación acumulada de Cu tras cada celda (modelo) y los puntos medidos: los del banco A,
+    o los del banco B si los controles son los de ese caso publicado."""
     cells = list(range(1, view.params.cells + 1))
+    measured_cells = caso.celdas_medidas if caso else MEASURED_CELLS
+    measured = caso.medidas_pct if caso else MEASURED_CU_PCT
+    measured_name = t("plot.rec.measured_b" if caso and caso.clave == "B" else "plot.rec.measured")
     fig = go.Figure()
     fig.add_trace(go.Scatter(
         x=cells, y=[100 * r for r in view.cu_cumulative], mode="lines+markers",
@@ -40,11 +45,11 @@ def recovery_figure(view: FlotationView) -> go.Figure:
         marker=dict(size=7),
     ))  # fmt: skip
     fig.add_trace(go.Scatter(
-        x=list(MEASURED_CELLS), y=list(MEASURED_CU_PCT), mode="markers",
-        name=t("plot.rec.measured"),
+        x=list(measured_cells), y=list(measured), mode="markers",
+        name=measured_name,
         marker=dict(size=11, symbol="diamond", color=INK, line=dict(color=PAPER, width=1.5)),
     ))  # fmt: skip
-    top = max(view.params.cells, max(MEASURED_CELLS))
+    top = max(view.params.cells, max(measured_cells))
     return _layout(fig, t("plot.rec.title"), 400,
                    x=dict(title=t("plot.rec.x"), dtick=1, range=[0.5, top + 0.5]),
                    y=dict(title=t("plot.rec.y"), range=[0, 102]))  # fmt: skip

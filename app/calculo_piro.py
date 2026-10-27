@@ -115,10 +115,21 @@ class ConverterView:
     flux_t: float
     slag_blow_so2_t: float
     copper_blow_so2_t: float
+    stages: tuple = ()  # (soplado a escoria, soplado a cobre) de `procesos.conversion`
 
     @property
     def so2_t(self) -> float:
         return self.slag_blow_so2_t + self.copper_blow_so2_t
+
+    @property
+    def white_metal_t(self) -> float:
+        """Metal blanco al fin del soplado a escoria."""
+        return self.states[1].lower_t
+
+    @property
+    def slag_total_t(self) -> float:
+        """Escoria de los dos soplados."""
+        return self.states[1].slag_t + self.states[2].slag_t
 
 
 def run_converter(p: ConverterParams) -> ConverterView:
@@ -145,4 +156,4 @@ def run_converter(p: ConverterParams) -> ConverterView:
                   so2["b"], cb.o2_reacted * O2_MOLAR_MASS / 1000.0),
     )  # fmt: skip
     flux = sum(f.tonnes.get("SiO2", 0.0) for f in sb.feeds if f.name == "fundente")
-    return ConverterView(p, states, flux, so2["a"], so2["b"])
+    return ConverterView(p, states, flux, so2["a"], so2["b"], (sb, cb))

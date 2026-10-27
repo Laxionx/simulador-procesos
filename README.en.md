@@ -190,6 +190,8 @@ See [docs/cadena.md](docs/cadena.md) (in Spanish).
 
 A didactic Streamlit app: metallurgical equipment animated from its real calculation (flotation in series, flash furnace, Peirce-Smith converter and electrowinning cell), with a guide to the path from the concentrate to the cathode. The bubbles, the froth, the layers of the bath and the copper deposit are drawn with the numbers of `procesos.flotacion`, `procesos.fusion`, `procesos.conversion` and `procesos.ew`.
 
+Each equipment tab brings indicators, an "Operating state" panel (balance-closure checks and ranges with a cited source), "Try this" experiments with live-calculated figures and, for flotation and the flash furnace, published cases that are compared with the measurements.
+
 **[▶ Try it in the browser](https://simulador-procesos-ntfmuyhlnqc9d73kkqljzk.streamlit.app/?lang=en)** (Streamlit Community Cloud, no sign-up). The app has an Español / English selector at the top of the sidebar; `?lang=en` opens it in English.
 
 ```bash

@@ -27,7 +27,7 @@ from dibujo import (
 )
 from i18n import t
 
-W, H = 960, 520
+W, H = 960, 540
 X0, X1 = 120.0, 880.0
 PULP_Y, TANK_H = 262.0, 150.0
 FROTH_MAX_PX = 100.0  # alto de la espuma de la celda que más sólidos manda
@@ -120,7 +120,7 @@ def _cell(i: int, x: float, w: float, view: FlotationView, heights: tuple[float,
 
 def _legend(view: FlotationView) -> str:
     top = max(view.solids_t_h, default=0.0)
-    y = H - 36
+    y = H - 56
     items = [
         (BRONZE, t("svg.flot.legend1")),
         (GANGUE, t("svg.flot.legend2")),
@@ -129,6 +129,7 @@ def _legend(view: FlotationView) -> str:
     for n, (color, label) in enumerate(items):
         out.append(f'<rect x="{X0}" y="{y - 10 + 16 * n}" width="12" height="12" fill="{color}"/>')
         out.append(text(X0 + 20, y + 16 * n, label, 12))
+    out.append(text(X0, y + 32, t("svg.flot.ilus"), 12, color=STEEL))
     out.append(text(X1, y, t("svg.flot.froth", top=es(top)), 12, "end"))
     out.append(text(X1, y + 16, scheme_note(), 12, "end", color=STEEL))
     return "".join(out)
@@ -148,7 +149,7 @@ def _static(view: FlotationView, n: int) -> str:
     labels = (
         text(24, mid - 14, t("svg.flot.feed"), 12)
         + text(W - 30, mid - 14, t("svg.flot.tails"), 12, "end")
-        + text(X1 + 20, launder_y - 18, t("svg.flot.conc"), 12, "end", color=BRONZE)
+        + text(X1 + 20, launder_y - 30, t("svg.flot.conc"), 12, "end", color=BRONZE)
         + text(X0 - 8, PULP_Y - FROTH_MAX_PX - 14, t("svg.flot.th"), 11, "end", color=STEEL)
         + text(X0 - 8, PULP_Y + TANK_H + 20, t("svg.flot.cell"), 11, "end", color=STEEL)
         + text(X0 - 8, PULP_Y + TANK_H + 38, t("svg.flot.cuacc"), 11, "end", color=STEEL)

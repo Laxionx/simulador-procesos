@@ -167,6 +167,17 @@ def sidebar_config() -> tuple[FlotationParams, EWParams, FlashParams, ConverterP
             for d in DATOS:
                 if d.equipo == group:
                     v[d.key] = _ask(d, st)
+    return armar_params(v)
+
+
+def valores_ejemplo() -> dict[str, float]:
+    """Los valores con que abre la barra lateral (el ejemplo), en las unidades de sus controles."""
+    return {d.key: d.default for d in DATOS}
+
+
+def armar_params(v: dict[str, float]) -> tuple[FlotationParams, EWParams, FlashParams,
+                                                ConverterParams]:  # fmt: skip
+    """Parámetros de cada equipo desde los valores de la barra lateral (los % vienen en %)."""
     flot = FlotationParams(int(v["cells"]), v["tau"], v["r_inf"] / 100.0, v["k"],
                            v["gangue"] / 100.0)  # fmt: skip
     ew = EWParams(v["j"], v["eff"] / 100.0, v["cu"], v["acid"], v["temp"], v["days"], v["area"])

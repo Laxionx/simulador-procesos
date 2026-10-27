@@ -193,7 +193,7 @@ def test_los_datos_y_la_mezcla_se_conservan_al_cambiar_de_idioma():
 def test_humo_de_todas_las_pestanas(lang):
     at = run(lang)
     assert not at.exception and not at.error
-    assert len(at.tabs) == 5 and len(at.metric) == 16
+    assert len(at.tabs) == 5 and len(at.metric) == 24
     assert len(at.sidebar.expander) == 4
 
 
@@ -202,7 +202,8 @@ def test_humo_de_todas_las_pestanas(lang):
 def test_humo_con_extremos_y_avisos_de_la_celda(lang):
     at = run(lang, cu=21.0, acid=219.0, temp=64.0, j=399.0, blend=4)
     assert not at.exception
-    assert at.warning, "la celda en el borde de la correlación avisa de la extrapolación"
+    avisos = [m.value for m in at.markdown if m.value.startswith(":orange-badge[")]
+    assert avisos, "la celda en el borde de la correlación avisa de la extrapolación (en el panel)"
 
 
 # ------------------------------------------------------------------ mismas cifras
@@ -249,7 +250,7 @@ def test_las_cifras_son_identicas_en_los_dos_idiomas(values):
     assert not es_.exception and not en.exception
     a, b = _figures(es_, "es"), _figures(en, "en")
     assert len(a) == len(b) > 20 and a == b
-    assert len(es_.metric) == len(en.metric) == 16
+    assert len(es_.metric) == len(en.metric) == 24
 
 
 # ------------------------------------------------------------------ los gráficos y los esquemas

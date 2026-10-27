@@ -31,9 +31,9 @@ def test_las_pestanas_cargan_sin_excepciones():
         "Guía", "Flotación", "Horno flash", "Convertidor", "Electroobtención"
     ]  # fmt: skip
     labels = [m.label for m in at.metric]
-    assert "Recuperación de Cu (CuFeS₂)" in labels and "Voltaje de celda" in labels
+    assert "Recuperación de Cu" in labels and "Voltaje de celda" in labels
     values = {m.label: m.value for m in at.metric}
-    assert values["Recuperación de Cu (CuFeS₂)"] == "94,0 %"
+    assert values["Recuperación de Cu"] == "94,0 %"
     assert values["Voltaje de celda"] == "2,18 V"
     assert values["O₂ técnico (Nm³/t)"] == "161,8"  # horno flash, mezcla 1
     assert values["Fundente (t)"] == "6,6"  # convertidor, ejemplo de Ilo
@@ -122,7 +122,7 @@ def test_las_cuatro_mezclas_del_horno_cargan(blend):
     at = AppTest.from_file(APP, default_timeout=120).run()
     at.sidebar.selectbox[0].set_value(i18n.t("blend", n=blend)).run()
     assert not at.exception and not at.error
-    assert any(m.label == "Mata (kg/t de concentrado)" for m in at.metric)
+    assert any(m.label == "Mata (kg/t)" for m in at.metric)
 
 
 @pytest.mark.app

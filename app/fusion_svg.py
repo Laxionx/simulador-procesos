@@ -27,7 +27,7 @@ from dibujo import (
 )
 from i18n import num_g, t
 
-W, H = 960, 580
+W, H = 960, 600
 SETTLER_X0, SETTLER_X1, BATH_BOTTOM, SETTLER_TOP = 130.0, 700.0, 450.0, 300.0
 TOWER_X0, TOWER_X1, TOWER_TOP = 130.0, 250.0, 100.0
 UPTAKE_X0, UPTAKE_X1 = 620.0, 700.0
@@ -152,9 +152,10 @@ def _legend(view: FlashView) -> str:
             slag=es(view.slag_density, 1),
         ),
         t("svg.flash.legend2", note=t("scheme.temp"), temp=es(t_c, 0)),
+        t("svg.flash.ilus"),
         scheme_note(),
     ]
-    return "".join(text(24, H - 56 + 17 * n, s, 12, color=INK if n == 2 else STEEL)
+    return "".join(text(24, H - 73 + 17 * n, s, 12, color=INK if n == len(rows) - 1 else STEEL)
                    for n, s in enumerate(rows))  # fmt: skip
 
 
