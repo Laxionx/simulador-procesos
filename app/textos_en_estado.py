@@ -8,6 +8,7 @@ T = {
     "estado.nivel.mal": "Problem",
     "estado.todo_ok": "Operation within range.",
     "estado.ver": "Show the {n} checks in range",
+    "estado.ver1": "Show the check in range",
     "estado.h": "#### Operating state",
     "prueba.h": "#### Try this",
     "prueba.intro": (
