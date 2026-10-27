@@ -15,7 +15,7 @@ dependencies = ["numpy", "scipy", "pyyaml", "openpyxl"]
 [project.optional-dependencies]
 dev = ["pytest", "pytest-cov", "basedpyright", "ruff"]
 equilibrio = ["phreeqpy>=0.6"]
-app = ["streamlit==1.65.0", "plotly==7.1.0"]
+app = ["streamlit==1.66.1", "pillow==13.0.0", "plotly==7.1.0"]
 molienda = ["conminucion @ git+https://github.com/Laxionx/simulador-conminucion.git@57feb274442b4ce7b2650a0ace05a747d08170ce"]
 
 [project.scripts]
