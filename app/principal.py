@@ -38,8 +38,6 @@ from graficos import converter_figure, recovery_figure, voltage_figure  # noqa: 
 from guia import ficha, guide_tab  # noqa: E402
 from i18n import activate, sidebar_selector, t, tr_error  # noqa: E402
 
-from procesos.fusion_datos import PAPER_MODEL  # noqa: E402
-
 activate()  # idioma de esta corrida: la sesión o `?lang=` (solo es o en)
 st.set_page_config(page_title=t("page.title"), layout="wide")
 
@@ -134,20 +132,6 @@ def flash_tab(params: FlashParams, animate: bool) -> None:
     st.html(as_images(flash_svg(view, paused=not animate), flash_svg(view, paused=True),
                       t("flash.alt")))  # fmt: skip
     st.caption(t("flash.cap", matte_m3=es(view.matte_m3_t, 3), slag_m3=es(view.slag_m3_t, 3)))
-    oc, oe, flux, grade, sio2, loss = view.plant
-    paper_oc, paper_oe, paper_flux = PAPER_MODEL[f"Mezcla {params.blend}"]
-    st.markdown(t("flash.head", blend=params.blend))
-    st.dataframe(
-        {
-            "": [t("flash.row.o2"), t("flash.row.air"), t("flash.row.flux")],
-            t("flash.col.this"): [round(r.oxygen_nm3_t, 1), round(r.enrichment_pct, 1),
-                                  round(r.flux_pct, 2)],
-            t("flash.col.paper"): [paper_oc, paper_oe, paper_flux],
-            t("flash.col.plant"): [oc, oe, flux],
-        },
-        hide_index=True,
-    )  # fmt: skip
-    st.caption(t("flash.cap2", grade=es(grade), sio2=es(sio2), loss=es(loss)))
     bloque_pruebas(FLASH)
 
 

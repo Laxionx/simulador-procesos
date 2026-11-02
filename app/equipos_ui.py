@@ -23,8 +23,11 @@ from estado import aplicar, pruebas
 from i18n import num_g, t
 from pruebas_planta import SLUG, pruebas_de
 
+from procesos.fusion_datos import PAPER_MODEL
+
 POR_FILA = 3  # indicadores por fila: con rótulos cortos caben hasta en una ventana angosta
 FILA_FLASH = {"oc": "flash.row.o2", "o2": "flash.row.air", "fundente": "flash.row.flux"}
+COLUMNA_TABLA_14 = {"oc": 0, "o2": 1, "fundente": 2}  # orden de PAPER_MODEL
 
 
 def indicadores(items: list[tuple[str, str, str | None]]) -> None:
@@ -80,12 +83,15 @@ def tabla_caso_flot(view: FlotationView, caso: CasoFlot) -> None:
 
 
 def tabla_caso_flash(view: FlashView, caso: CasoFlash) -> None:
-    """Cálculo frente a la planta (Tabla 13): valor, publicado, Δ % y tolerancia del repo."""
+    """Cálculo frente a la planta (Tabla 13): valor, el modelo del artículo (Tabla 14), lo
+    publicado, Δ % y tolerancia del repo."""
     filas = comparacion_flash(view, caso)
+    articulo = PAPER_MODEL[f"Mezcla {caso.blend}"]
     st.markdown(t("flash.cmp.titulo", n=caso.blend))
     _tabla({
         t("flash.cmp.mag"): [t(FILA_FLASH[f.clave]) for f in filas],
         t("flash.cmp.este"): [es(f.modelo, 2 if f.clave == "fundente" else 1) for f in filas],
+        t("flash.col.paper"): [num_g(articulo[COLUMNA_TABLA_14[f.clave]]) for f in filas],
         t("flash.cmp.planta"): [num_g(f.planta) for f in filas],
         t("flash.cmp.dpct"): [_con_signo(f.delta_pct, 1) for f in filas],
         t("flash.cmp.tol"): [t("flash.tol." + f.clave) for f in filas],

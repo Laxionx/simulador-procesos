@@ -61,18 +61,10 @@ T = {
         "es proporcional a ese volumen (kg ÷ densidad). Densidades de dibujo: mata 4,8 g/cm³ "
         "por mezcla ideal (±10 %), escoria 3,7 g/cm³ (aprox.)."
     ),
-    "flash.head": "**Modelo frente a la planta** (mezcla {blend}, Bacedoni et al. 2020)",
     "flash.row.o2": "Consumo de O₂ (Nm³/t)",
     "flash.row.air": "O₂ en el aire (% vol.)",
     "flash.row.flux": "Fundente (% de la carga)",
-    "flash.col.this": "Este cálculo",
     "flash.col.paper": "Modelo del artículo (Tabla 14)",
-    "flash.col.plant": "Planta (Tabla 13)",
-    "flash.cap2": (
-        "La planta operó esta mezcla con mata de {grade} % Cu, {sio2} % de SiO₂ en la escoria y "
-        "{loss} MJ/t de pérdida; los controles no cambian solos al elegir la mezcla. El modelo "
-        "del artículo tampoco iguala el consumo de O₂ medido."
-    ),
     # ------------------------------------------------------------ convertidor
     "conv.err": "No se pudo calcular el convertidor con estos datos: {exc}",
     "conv.m1": "Aire total (Nm³ por 100 t de mata)",

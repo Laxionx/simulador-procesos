@@ -372,9 +372,12 @@ def test_los_botones_de_casos_ponen_los_datos_y_muestran_lo_publicado(lang):
     assert not at.exception and not at.error
     with i18n.use(lang):
         assert widget(at, "dato_blend").value == i18n.t("blend", n=3)
-        tabla = at.table[1].value
-        assert list(tabla.iloc[:, 1]) == [i18n.num_g(x) for x in (193.0, 53.4, 10.6)]  # Tabla 13
-        assert list(tabla.iloc[:, 2]) == [es(x, 1) for x in (-7.2, -28.0, -27.4)]  # Δ %
+        tabla = at.table[1].value  # por nombre de columna: el orden es de diseño
+        planta, articulo = i18n.t("flash.cmp.planta"), i18n.t("flash.col.paper")
+        assert list(tabla[planta]) == [i18n.num_g(x) for x in (193.0, 53.4, 10.6)]  # Tabla 13
+        assert list(tabla[articulo]) == [i18n.num_g(x) for x in (163.3, 52.9, 7.8)]  # Tabla 14
+        dpct = i18n.t("flash.cmp.dpct")
+        assert list(tabla[dpct]) == [es(x, 1) for x in (-7.2, -28.0, -27.4)]  # Δ %
     assert widget(at, "dato_f_grade").value == 66.6 and widget(at, "dato_f_loss").value == 205.5
     assert not badges(at, "red")
     next(b for b in at.button if b.key == "flot_prueba_reset").click().run()
