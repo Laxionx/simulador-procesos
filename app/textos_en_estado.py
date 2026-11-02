@@ -182,6 +182,19 @@ T = {
     ),
     "conv.var.escoria": "slag blow",
     "conv.var.cobre": "copper blow",
+    "conv.calor.sobra": (
+        "Copper blow heat, not counting converter losses: {mj} MJ to spare, enough to melt {ton} t "
+        "of cold copper. In plants this heat is used to melt cold charge (Lennartsson 2013)."
+    ),
+    "conv.calor.falta": (
+        "Copper blow heat, not counting converter losses: {mj} MJ short, what it would take to "
+        "melt {ton} t of cold copper. In plants this blow has heat to spare and cold charge is "
+        "added (Lennartsson 2013). The model heats all the blown air to "
+        "bath temperature, and the {ef} % efficiency comes from the blower air: low efficiency is "
+        "partly attributed to tuyere leaks, air that never goes through the bath (Chibwe et al. "
+        "2015; docs/conversion.md, findings section)."
+    ),
+    "conv.calor.ref": " At {ef} %, the efficiency Boliden Rönnskär estimates, the balance gives {mj} MJ.",
     # ------------------------------------------------------------ electrowinning: panel
     "ew.chk.sin_avisos": (
         "The model issued no warnings: the electrolyte is within the range of the conductivity "
@@ -270,6 +283,14 @@ T = {
         "blister copper ({blis0} t) do not change: the temperature only enters the heat balance "
         "and the copper density. Hot copper is less dense and its volume rises from {m30} to "
         "{m31} m³."
+    ),
+    "exp.conv.calor.titulo": "Make the heat suffice",
+    "exp.conv.calor.texto": (
+        "With {c_eff_copper1} % O₂ efficiency in the copper blow instead of {c_eff_copper0} %, the "
+        "value Boliden Rönnskär estimates, less air is needed (from {aire0} to {aire1} Nm³) and "
+        "the copper blow goes from being short of heat ({frio0} t of cold copper) to melting "
+        "{frio1} t, not counting losses. The blister copper ({blis0} t) does not change. The panel "
+        "gives a **warning**: {c_eff_copper1} % is above what was measured at Flin Flon."
     ),
     "exp.ew.corriente.titulo": "Raise the current density",
     "exp.ew.corriente.texto": (

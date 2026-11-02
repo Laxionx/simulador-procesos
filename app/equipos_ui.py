@@ -4,10 +4,12 @@ números del cálculo."""
 
 from __future__ import annotations
 
+from dataclasses import replace
+
 import pandas as pd
 import streamlit as st
 from calculo import FlotationView
-from calculo_piro import FlashView
+from calculo_piro import ConverterView, FlashView, run_converter
 from casos import (
     CASOS_FLASH,
     CASOS_FLOT,
@@ -23,6 +25,7 @@ from estado import aplicar, pruebas
 from i18n import num_g, t
 from pruebas_planta import SLUG, pruebas_de
 
+from procesos.conversion_datos import RONNSKAR_EFF_COPPER
 from procesos.fusion_datos import PAPER_MODEL
 
 POR_FILA = 3  # indicadores por fila: con rótulos cortos caben hasta en una ventana angosta
@@ -100,6 +103,21 @@ def tabla_caso_flash(view: FlashView, caso: CasoFlash) -> None:
     puntos = {f.clave: f.delta_puntos for f in filas}
     st.caption(t("flash.cmp.nota", o2=_con_signo(puntos["o2"], 1),
                  fl=_con_signo(puntos["fundente"], 2)))  # fmt: skip
+
+
+def leyenda_calor_conv(view: ConverterView) -> str:
+    """El calor del soplado a cobre sin pérdidas (docs/conversion.md, «Hallazgos», 5). Si falta y
+    la eficiencia está bajo la que estima Rönnskär, se calcula en vivo con esa eficiencia."""
+    mj, frio = view.copper_blow_surplus_mj, view.copper_blow_cold_copper_t
+    if mj >= 0:
+        return t("conv.calor.sobra", mj=es(mj, 0), ton=es(frio, 1))
+    texto = t("conv.calor.falta", mj=es(-mj, 0), ton=es(-frio, 1),
+              ef=es(100 * view.params.eff_copper, 0))  # fmt: skip
+    if view.params.eff_copper < RONNSKAR_EFF_COPPER:
+        ref = run_converter(replace(view.params, eff_copper=RONNSKAR_EFF_COPPER))
+        texto += t("conv.calor.ref", ef=es(100 * RONNSKAR_EFF_COPPER, 0),
+                   mj=_con_signo(ref.copper_blow_surplus_mj, 0))  # fmt: skip
+    return texto
 
 
 # ------------------------------------------------------------------ Prueba esto

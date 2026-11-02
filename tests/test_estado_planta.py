@@ -21,6 +21,7 @@ import calculo_piro as cp  # noqa: E402
 import casos  # noqa: E402
 import controles  # noqa: E402
 import convertidor_svg  # noqa: E402
+import equipos_ui as eu  # noqa: E402
 import estado_planta as ep  # noqa: E402
 import ew_svg  # noqa: E402
 import flotacion_svg  # noqa: E402
@@ -306,11 +307,49 @@ def test_los_indicadores_tienen_rotulos_cortos_en_filas_de_tres(lang):
     assert [len(tab.metric) for tab in at.tabs] == [0, 6, 6, 6, 6]  # dos filas de tres por pestaña
 
 
+# ------------------------------------------------------------------ calor del soplado a cobre
+def test_el_calor_del_soplado_a_cobre_es_el_de_la_etapa_y_cambia_de_signo_con_la_eficiencia():
+    # docs/conversion.md, «Hallazgos», 5: con 77 % (Kyllo, Flin Flon) falta calor y con 85 %
+    # (Rönnskär) sobra. Son las cifras de la tabla del documento: si el modelo cambia, se actualiza.
+    base = cp.run_converter(cp.ConverterParams())
+    h_in, h_out = base.stages[1].heat_balance()
+    assert base.copper_blow_surplus_mj == pytest.approx(h_in - h_out, rel=1e-12)
+    vistas = [cp.run_converter(dataclasses.replace(cp.ConverterParams(), eff_copper=e))
+              for e in (0.77, 0.85, 0.90, 1.00)]  # fmt: skip
+    assert [round(v.copper_blow_surplus_mj) for v in vistas] == [-7196, 3654, 9455, 19318]
+    assert [round(v.copper_blow_cold_copper_t, 1) for v in vistas] == [-9.8, 5.0, 12.9, 26.4]
+
+
+@pytest.mark.parametrize("lang", ["es", "en"])
+def test_la_leyenda_de_calor_dice_cuanto_falta_o_sobra_y_sugiere_ronnskar_solo_si_ayuda(lang):
+    def leyenda(**cambios: float) -> str:
+        return eu.leyenda_calor_conv(
+            cp.run_converter(dataclasses.replace(cp.ConverterParams(), **cambios))
+        )
+
+    with i18n.use(lang):
+        falta, sobra = leyenda(), leyenda(eff_copper=0.85)
+        alta = leyenda(eff_copper=0.88, bath_c=1300.0)  # falta calor, pero ya pasa del 85 %
+        assert es(7196, 0) in falta and es(9.8, 1) in falta and es(3654, 0) in falta
+        assert es(3654, 0) in sobra and es(5.0, 1) in sobra and "Rönnskär" not in sobra
+        assert es(2093, 0) in alta and "Rönnskär" not in alta
+    assert "Rönnskär" in falta
+
+
 @pytest.mark.app
 def test_el_ejemplo_abre_con_todos_los_paneles_en_rango():
     at = run()
     assert not badges(at, "orange") and not badges(at, "red")
     assert sum(m == ":green-badge[En rango] Operación dentro de rango." for m in lines(at)) == 4
+
+
+@pytest.mark.app
+@pytest.mark.parametrize("lang", ["es", "en"])
+def test_la_pestana_del_convertidor_muestra_la_leyenda_de_calor(lang):
+    at = run(lang)
+    with i18n.use(lang):
+        esperado = eu.leyenda_calor_conv(cp.run_converter(cp.ConverterParams()))
+    assert esperado in [c.value for c in at.tabs[3].caption]
 
 
 @pytest.mark.app

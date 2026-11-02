@@ -116,6 +116,37 @@ misma razón: los datos publicados no cierran.
    escoria contada por ollas. La diferencia con Rönnskär está en los datos de entrada, no en el
    modelo.
 
+5. **Con las eficiencias de Flin Flon, al soplado a cobre le falta calor.** Con el ejemplo de la
+   app (mata de 62 %, baño a 1.200 °C, eficiencia de O2 de 77 % en el soplado a cobre) faltan
+   7.196 MJ sin contar ninguna pérdida, lo que costaría fundir 9,8 t de cobre frío. En planta pasa
+   lo contrario: a ese soplado le sobra calor y se le agrega carga fría (Lennartsson 2013). El
+   signo depende casi solo de la eficiencia, porque calentar hasta el
+   baño el N2 del aire se lleva unos 90.000 MJ:
+
+   | Eficiencia del soplado a cobre | Calor sin pérdidas | Cobre frío que funde |
+   |---|---|---|
+   | 0,77 (Kyllo 1995, Flin Flon; el ejemplo de la app) | −7.196 MJ | −9,8 t |
+   | 0,85 (lo que estima Boliden Rönnskär; Lennartsson 2013) | +3.654 MJ | +5,0 t |
+   | 0,90 | +9.455 MJ | +12,9 t |
+   | 1,00 (Copper Cliff, «cercana al 100 %»; Queneau y Marcuson 1996) | +19.318 MJ | +26,4 t |
+
+   - Kyllo calcula la eficiencia con el aire del soplador (hierro removido frente a aire
+     soplado). La eficiencia baja se atribuye en parte a fugas en las toberas por el punzonado
+     (Chibwe et al. 2015).
+   - El gas es la salida grande: en los convertidores de Copper Cliff soplados con aire, la
+     mitad del calor de reacción se iba con el nitrógeno, y la carga fría se pudo fundir recién
+     al enriquecer el aire con O2 (Queneau y Marcuson 1996).
+   - El modelo calienta hasta el baño **todo** el aire soplado. Si parte de la ineficiencia es aire
+     que se fuga y no pasa por el baño, el modelo cuenta de más el calor que se lleva el gas.
+   - No se cambió nada del modelo ni los valores por defecto: las eficiencias de Kyllo siguen
+     siendo las que dan el aire que pide el soplador. La app muestra el calor del soplado a cobre
+     en una leyenda de la pestaña y un «Prueba esto» sube la eficiencia a 85 %.
+
+   Fuentes nuevas: Queneau, P. E. y Marcuson, S. W. (1996), «Oxygen pyrometallurgy at Copper
+   Cliff — A half century of progress», *JOM* 48(1), 14-21, doi 10.1007/BF03221355. Chibwe, D. K.
+   et al. (2015), «Sonic injection into a PGM Peirce-Smith converter: CFD modelling and industrial
+   trials», *J. SAIMM* 115(5).
+
 ## Lo que no entró
 
 - **MDPI *Thermo* 5(4), 58 (2025):** su balance del convertidor (Tabla 3) no es comparable.

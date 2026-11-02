@@ -52,6 +52,8 @@ EXPERIMENTOS: tuple[Experimento, ...] = (
                 {"aire": +1, "blis": 0, "fund": 0, "so2": 0}, nivel="aviso"),
     Experimento(CONV, "bano", {"c_bath": 1250.0},
                 {"aire": 0, "blis": 0, "m3": +1}),
+    Experimento(CONV, "calor", {"c_eff_copper": 85.0},
+                {"aire": -1, "frio": +1, "blis": 0}, nivel="aviso"),
     Experimento(EW, "corriente", {"j": 400.0},
                 {"kg": +1, "mm": +1, "v": +1, "kwh": +1}),
     Experimento(EW, "eficiencia", {"eff": 85.0},
@@ -64,7 +66,7 @@ EXPERIMENTOS: tuple[Experimento, ...] = (
 DECIMALES = {
     FLOT: {"rec": 1, "ley": 1, "conc": 1, "relave": 2},
     FLASH: {"oc": 1, "enr": 1, "fund": 2, "mata": 0, "esc": 0, "so2": 0},
-    CONV: {"aire": 0, "fund": 1, "blis": 1, "so2": 1, "m3": 2},
+    CONV: {"aire": 0, "fund": 1, "blis": 1, "so2": 1, "m3": 2, "frio": 1},
     EW: {"kg": 1, "mm": 1, "v": 2, "kwh": 0},
 }
 
@@ -99,7 +101,7 @@ def medir(equipo: str, cambios: dict[str, float] | None = None) -> Medicion:
         cv = run_converter(conv)
         mags = {"aire": cv.states[1].air_nm3 + cv.states[2].air_nm3, "fund": cv.flux_t,
                 "blis": cv.states[2].lower_t, "so2": cv.so2_t,
-                "m3": cv.states[2].lower_m3}  # fmt: skip
+                "m3": cv.states[2].lower_m3, "frio": cv.copper_blow_cold_copper_t}  # fmt: skip
         filas = filas_convertidor(cv)
     else:
         ev = run_ew(ew)

@@ -26,6 +26,7 @@ from equipos_ui import (  # noqa: E402
     botones_casos_flash,
     botones_casos_flot,
     indicadores,
+    leyenda_calor_conv,
     tabla_caso_flash,
     tabla_caso_flot,
 )
@@ -169,6 +170,7 @@ def converter_tab(params: ConverterParams, animate: bool) -> None:
     )
     st.plotly_chart(converter_figure(view), width="stretch")
     st.caption(t("conv.cap2"))
+    st.caption(leyenda_calor_conv(view))
     bloque_pruebas(CONV)
 
 

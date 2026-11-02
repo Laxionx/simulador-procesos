@@ -184,6 +184,20 @@ T = {
     ),
     "conv.var.escoria": "soplado a escoria",
     "conv.var.cobre": "soplado a cobre",
+    "conv.calor.sobra": (
+        "Calor del soplado a cobre, sin contar las pérdidas del convertidor: sobran {mj} MJ, que "
+        "alcanzan para fundir {ton} t de cobre frío. En planta ese calor se usa para fundir carga "
+        "fría (Lennartsson 2013)."
+    ),
+    "conv.calor.falta": (
+        "Calor del soplado a cobre, sin contar las pérdidas del convertidor: faltan {mj} MJ, lo "
+        "que costaría fundir {ton} t de cobre frío. En planta a este soplado le sobra calor y se "
+        "le agrega carga fría (Lennartsson 2013). El modelo calienta "
+        "hasta el baño todo el aire soplado, y la eficiencia de {ef} % sale del aire del soplador: "
+        "la eficiencia baja se atribuye en parte a fugas en las toberas, aire que no pasa por el "
+        "baño (Chibwe et al. 2015; docs/conversion.md, «Hallazgos»)."
+    ),
+    "conv.calor.ref": " Con {ef} %, la eficiencia que estima Boliden Rönnskär, el balance da {mj} MJ.",
     # ------------------------------------------------------------ electroobtención: panel
     "ew.chk.sin_avisos": (
         "El modelo no emitió avisos: el electrolito está dentro del rango de la correlación de "
@@ -271,6 +285,14 @@ T = {
         "Con el baño a {c_bath1} °C en vez de {c_bath0} °C, el aire ({aire0} Nm³) y el blíster "
         "({blis0} t) no cambian: la temperatura solo entra al balance de calor y a la densidad "
         "del cobre. El cobre caliente es menos denso y su volumen sube de {m30} a {m31} m³."
+    ),
+    "exp.conv.calor.titulo": "Que el calor alcance",
+    "exp.conv.calor.texto": (
+        "Con {c_eff_copper1} % de eficiencia de O₂ en el soplado a cobre en vez de "
+        "{c_eff_copper0} %, la que estima Boliden Rönnskär, hace falta menos aire (de {aire0} a "
+        "{aire1} Nm³) y el soplado a cobre pasa de faltarle calor ({frio0} t de cobre frío) a "
+        "alcanzar para fundir {frio1} t, sin contar pérdidas. El blíster ({blis0} t) no cambia. El "
+        "panel da **aviso**: {c_eff_copper1} % está sobre lo medido en Flin Flon."
     ),
     "exp.ew.corriente.titulo": "Subir la densidad de corriente",
     "exp.ew.corriente.texto": (

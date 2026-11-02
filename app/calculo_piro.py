@@ -131,6 +131,17 @@ class ConverterView:
         """Escoria de los dos soplados."""
         return self.states[1].slag_t + self.states[2].slag_t
 
+    @property
+    def copper_blow_surplus_mj(self) -> float:
+        """Calor que sobra (+) o falta (−) en el soplado a cobre, sin pérdidas del convertidor."""
+        h_in, h_out = self.stages[1].heat_balance()
+        return h_in - h_out
+
+    @property
+    def copper_blow_cold_copper_t(self) -> float:
+        """Cobre frío (t, a 25 °C) que ese calor alcanza a fundir; negativo si falta calor."""
+        return self.stages[1].cold_copper_capacity_t(0.0)
+
 
 def run_converter(p: ConverterParams) -> ConverterView:
     """Lanza `ConversionError` (ValueError) si la carga no admite las metas."""

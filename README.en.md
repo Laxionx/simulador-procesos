@@ -45,7 +45,7 @@ Planta: Lixiviación de óxidos de cobre
 
 In addition, 3 real published plants: the production of Constancia (Hudbay), the leaching acid of Marimaca and the cathodes of the Puquios mining plan. The tolerances were fixed before running. Detail and findings in [docs/VALIDACION_PLANTAS_REALES.md](docs/VALIDACION_PLANTAS_REALES.md) (in Spanish).
 
-731 tests (plus 52 expected failures: source rounding, the limits of the activity models, the electrolyte conductivity, the ideal-steam one, the JANAF-USGS discrepancy of FeO, what the flash furnace does not reach, the published converter charge that does not close, the refining voltage against the IsaKidd compendium, flotation from laboratory to pilot and the first-order kinetics of Vinnett 2025 at P80 212 and 300 µm), 97 % coverage and clean ruff:
+739 tests (plus 52 expected failures: source rounding, the limits of the activity models, the electrolyte conductivity, the ideal-steam one, the JANAF-USGS discrepancy of FeO, what the flash furnace does not reach, the published converter charge that does not close, the refining voltage against the IsaKidd compendium, flotation from laboratory to pilot and the first-order kinetics of Vinnett 2025 at P80 212 and 300 µm), 97 % coverage and clean ruff:
 
 ```bash
 python -m pytest --cov=procesos
@@ -56,7 +56,7 @@ python -m pytest --cov=procesos
 | Step | Command | Time | What it catches |
 |---|---|---|---|
 | 1. Check without running | `ruff check . && basedpyright` | ~20 s | names and types; basedpyright reports only **new** errors (the 54 earlier ones are in `.basedpyright/baseline.json`) |
-| 2. Tests without the app | `pytest -m "not app" -x` | ~40 s | 721 tests: models, validations, app calculations and the keys of both languages |
+| 2. Tests without the app | `pytest -m "not app" -x` | ~40 s | 725 tests: models, validations, app calculations and the keys of both languages |
 | 3. Full suite | `pytest` | ~3 min | everything; required before every commit |
 | 4. CI | on push | | Python 3.12 and 3.13 with a clean install |
 

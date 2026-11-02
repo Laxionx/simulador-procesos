@@ -43,7 +43,7 @@ Planta: Lixiviación de óxidos de cobre
 
 Además, 3 plantas reales publicadas: la producción de Constancia (Hudbay), el ácido de lixiviación de Marimaca y los cátodos del plan minero de Puquios. Las tolerancias se fijaron antes de correr. Detalle y hallazgos en [docs/VALIDACION_PLANTAS_REALES.md](docs/VALIDACION_PLANTAS_REALES.md).
 
-731 pruebas (más 52 fallos esperados: redondeos de la fuente, los límites de los modelos de actividad, la conductividad del electrolito, el del vapor ideal, la discrepancia JANAF-USGS del FeO, lo que el horno flash no alcanza, la carga de convertidor publicada que no cierra, el voltaje de refinación frente al compendio IsaKidd, la flotación de laboratorio a piloto y la cinética de primer orden de Vinnett 2025 con P80 de 212 y 300 µm), cobertura del 97 % y ruff limpio:
+739 pruebas (más 52 fallos esperados: redondeos de la fuente, los límites de los modelos de actividad, la conductividad del electrolito, el del vapor ideal, la discrepancia JANAF-USGS del FeO, lo que el horno flash no alcanza, la carga de convertidor publicada que no cierra, el voltaje de refinación frente al compendio IsaKidd, la flotación de laboratorio a piloto y la cinética de primer orden de Vinnett 2025 con P80 de 212 y 300 µm), cobertura del 97 % y ruff limpio:
 
 ```bash
 python -m pytest --cov=procesos
@@ -54,7 +54,7 @@ python -m pytest --cov=procesos
 | Paso | Comando | Tarda | Qué atrapa |
 |---|---|---|---|
 | 1. Revisar sin ejecutar | `ruff check . && basedpyright` | ~20 s | nombres y tipos; basedpyright avisa solo los errores **nuevos** (los 54 previos están en `.basedpyright/baseline.json`) |
-| 2. Pruebas sin la app | `pytest -m "not app" -x` | ~40 s | 721 pruebas: modelos, validaciones, cálculos de la app y claves de los dos idiomas |
+| 2. Pruebas sin la app | `pytest -m "not app" -x` | ~40 s | 725 pruebas: modelos, validaciones, cálculos de la app y claves de los dos idiomas |
 | 3. Suite completa | `pytest` | ~3 min | todo; obligatoria antes de cada commit |
 | 4. CI | al hacer push | | Python 3.12 y 3.13 con instalación limpia |
 
